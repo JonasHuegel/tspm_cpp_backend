@@ -38,16 +38,17 @@ int main(int argc, char * argv[]) {
     int patientId =0;
     size_t sequenceNum=0;
     omp_set_num_threads(16);
-    std::mutex mutex;
+    std::mutex readMutex;
+    std::mutex countMutex;
     #pragma omp parallel for
     for(size_t i = 0; i < patientCount; ++i) {
 
         std::vector<dbMartEntry> patientEntries;
-        mutex.lock();
+        readMutex.lock();
         patientEntries = extractPatient(csvFilePointer, patientId);
         ++patientId;
         int local_patID = patientId;
-        mutex.unlock();
+        readMutex.unlock();
 
 
          //TODO create sequences
@@ -59,11 +60,11 @@ int main(int argc, char * argv[]) {
                  sequences.push_back(createSequence(patientEntries[j].phenID, patientEntries[k].phenID));
              }
          }
+         countMutex.lock();
          sequenceNum+= sequences.size();
          std::cout << local_patID << " num of sequences: " <<sequences.size() <<std::endl;
-//         if(patientId%100 == 0){
-//             std::cout << patientId << std::endl;
-//         }
+         countMutex.unlock();
+
          //TODO write sequences
      }
     std::cout <<sequenceNum << std::endl;
