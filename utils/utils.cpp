@@ -1,18 +1,22 @@
 
-
 #include "utils.h"
 extern size_t* startPositions;
 
 
 
-long createSequence(std::string phenotypeA, std::string phenotypeB, int phenotypelenght = 6){
-    //    fill up the second string with leading Zeros to avoid collisions with other sequences (creating unique seqs)
-    //    e,g. phenA=1,phenB=12 ->seq=100012; without padding seq=112, could be phenA=11&phenB=2 or phenA=1&phenB=12
-    phenotypeA.insert(phenotypeB.begin(),phenotypelenght-phenotypeA.size(), '0');
-    phenotypeA.append(phenotypeB);
-    return atol(phenotypeA.c_str());
-
+size_t writeSequencestoBinaryFile(std::string patientFilename, std::vector<long> sequences){
+    FILE* patientFile;
+    patientFile = fopen(patientFilename.c_str(), "wb");
+    size_t written;
+    if(patientFile!= nullptr) {
+       written = std::fwrite(&sequences[0], 1, sequences.size() * sizeof(long), patientFile);
+    }else{
+        exit(EXIT_FAILURE);
+    }
+    fclose(patientFile);
+    return written;
 }
+
 
 
 long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght){
@@ -107,8 +111,6 @@ std::vector<std::string> getTokensFromLine(const std::string& line) {
         end = line.find(delim, start);
         vectorizedLine.push_back(line.substr(start, end - start));
     }
-    //remove \n from last entry
-//    vectorizedLine[vectorizedLine.size()-1] = vectorizedLine.end()->substr(0,vectorizedLine.end()->length()-1);
     return vectorizedLine;
 }
 

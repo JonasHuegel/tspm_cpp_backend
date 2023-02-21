@@ -33,6 +33,7 @@
 
 # data
 data/
+out/
 
 #clion
 .idea/

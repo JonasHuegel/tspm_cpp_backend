@@ -17,6 +17,7 @@ std::vector<dbMartEntry> extractPatient(FILE* csv_file, int patId, int patIdColu
 size_t countLinesInFile(const std::basic_string<char>& filename);
 std::vector<std::string> getTokensFromLine(const std::string& line);
 long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 6);
+size_t writeSequencestoBinaryFile(std::string patientFilename, std::vector<long> sequences);
 
 
 
