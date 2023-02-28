@@ -101,6 +101,14 @@ size_t countLinesInFile(const std::basic_string<char>& filename){
     return line_count;
 }
 
+long addDurationToSequence(long &back, long startDate, long endDate) {
+    long milliSecondsPerDay = 1000 * 60 * 60 * 24;
+    long duration = (endDate-startDate)%milliSecondsPerDay;
+    int bitsForDuration = 40;
+    back = (duration << bitsForDuration) | back;
+    return back;
+}
+
 std::vector<std::string> getTokensFromLine(const std::string& line) {
     std::vector<std::string> vectorizedLine;
     size_t start;

@@ -18,6 +18,7 @@ size_t countLinesInFile(const std::basic_string<char>& filename);
 std::vector<std::string> getTokensFromLine(const std::string& line);
 long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 6);
 size_t writeSequencestoBinaryFile(std::string patientFilename, std::vector<long> sequences);
+long addDurationToSequence(long &back, long startDate, long endDate);
 
 
 
