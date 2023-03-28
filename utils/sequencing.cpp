@@ -8,9 +8,6 @@
 #include "sequencing.h"
 #include <omp.h>
 
-
-std::pair<size_t, size_t> findStartAndEnd(std::vector<temporalSequence> sequences, const unsigned long &sequence);
-
 /**
  * Comparator for timedSequences struct. Added all greater as and smaller as cases for all attributes. In the equal
  * cases the next attribute should be used. In the case that all attributes are equal return false. The sequnceID is the
@@ -87,97 +84,97 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
                          int *phenxColumns, int *dateColumns, long maxPatID, size_t sequenceCount,
                          const std::map<long, size_t>& sequences, size_t sparsityThreshold, bool removeSparseBuckets) {
 
-
     std::vector<temporalSequence> timedSequences = createSequencesWithDuration(inputFilePaths, inputFileDelimiter, outPutDirectory, outputFilePrefix,
                                                                                patIDColumns, phenxColumns, dateColumns, maxPatID,sequenceCount,sequences);
     std::cout << "created " <<timedSequences.size() << " sequences with duration. \nSorting:" << std::endl;
-    omp_set_num_teams(2);
     std::vector<std::vector<temporalSequence>> globalSequences(omp_get_max_threads());
     ips4o::parallel::sort(timedSequences.begin(),timedSequences.end(),timedSequencesSorter);
-    size_t start = 0;
+    size_t numOfSeqs = timedSequences.size();
     std::mutex sequenceMutex;
-    std::cout << "computing temporal buckets" << std::endl;
-    //TODO: global sequences as shared pointer!
-    //TODO: check speed with lookup table for each sequence!
-    size_t startIndices[sequences.size()];
-    size_t index =0;
+    std::cout << "creating arrays for each thread" << std::endl;
 
-    for(auto it = sequences.begin(); it != sequences.end();++it, ++index){
-        startIndices[index] = it->first;
+    auto endPos = timedSequences.begin();
+    for (size_t i = 0; i < omp_get_max_threads(); ++i){
+        endPos = timedSequences.begin() +(timedSequences.size() / omp_get_max_threads() * (i+1));
+        auto it = endPos;
+        for (; it != timedSequences.end() && it->seqID == timedSequences.end()->seqID; ++it);
+        endPos = it;
+        globalSequences[i] = std::vector<temporalSequence>(timedSequences.begin(), endPos);
+        timedSequences.erase(timedSequences.begin(),endPos);
+        timedSequences.shrink_to_fit();
     }
+    timedSequences.clear();
+    timedSequences.shrink_to_fit();
+    std::cout << "creating arrays for start indicies" << std::endl;
+    std::vector<std::vector<size_t>> startIndices(omp_get_max_threads());
+    for (size_t i = 0; i < omp_get_max_threads(); ++i){
+        startIndices[i] =std::vector<size_t>();
+        if(globalSequences[i].size() == 0){
+            continue;
+        }
+        startIndices.emplace_back(0);
+        unsigned long seq = globalSequences[i][0].seqID;
+        for (int j = 0; j <globalSequences[i].size() ; ++j) {
+            if(seq != globalSequences[i][j].seqID){
+                startIndices[i].emplace_back(j-1);
+            }
+        }
+    }
+    std::cout << "computing temporal buckets" << std::endl;
 
-
-#pragma omp parallel for shared(sequences,sequenceMutex,start, timedSequences, removeSparseBuckets, sparsityThreshold, globalSequences, std::cout, startIndices) default (none) schedule(runtime)
-    for(size_t i = 0; i < sequences.size(); ++i){
-        std::cout << "Sequence " << i << " of " << sequences.size() << std::endl;
-        sequenceMutex.lock();
-        size_t local_start = start;
-        size_t end =  findLastSameSequence(timedSequences, local_start);
-        start += end;
-        sequenceMutex.unlock();
-        //TODO check if finding start and end by sequene id is faster
-//        auto seqIt = sequences.begin();
-//        seqIt = std::next(seqIt, i);
-//        std::pair<size_t, size_t> startEnd = findStartAndEnd(timedSequences,seqIt->first);
-//        size_t local_start = startEnd.first;
-//        size_t end = startEnd.second;
-//        if(end == 0) {
-//            std::cout << "no sequence found";
-//            continue;
-//        }
-//        size_t local_start = startIndices[i];
-//        size_t end = 0;
-//        if(i< sequences.size()-1){
-//            end = startIndices[i+1];
-//        }else{
-//            end =timedSequences.size()-1;
-//        }
-
+#pragma omp parallel for shared(sequences,sequenceMutex, removeSparseBuckets, sparsityThreshold, globalSequences, std::cout, startIndices, numOfSeqs) default (none)
+    for(size_t i = 0; i < omp_get_max_threads(); ++i) {
+        for (size_t j = 0; j < startIndices[i].size(); ++j) {
+            size_t local_start = startIndices[i][j];
+            size_t end;
+            if (j < startIndices[i].size() - 1) {
+                end = startIndices[i][j + 1];
+            } else {
+                end = globalSequences[i].size();
+            }
+            auto startIterator = globalSequences[i].begin() + local_start;
+            auto endIterator = globalSequences[i].begin() + end;
 
 //       compute buckets
-        size_t sum = 0;
-        unsigned int min = 0,  max = 0;
-        for (size_t j = local_start; j <= end; ++j) {
-            min = std::min(min,timedSequences[j].duration);
-            max = std::max(max, timedSequences[j].duration);
-        }
-        unsigned int range = max - min;
-        int numberOfBuckets = std::max(4, int (std::log(range)));
+            unsigned int min = 0, max = 0;
 
-        std::vector<temporalSequence> localSequenceVector;
-        localSequenceVector.insert(localSequenceVector.end(), end, timedSequences.data()[local_start]);
+            for (auto it = startIterator; it != endIterator; ++it) {
+                min = std::min(min, it->duration);
+                max = std::max(max, it->duration);
+            }
+            unsigned int range = max - min;
+            int numberOfBuckets = std::max(4, int(std::log(range)));
 
 //      add bucket id to sequence id
-        for (temporalSequence sequence : localSequenceVector) {
-            unsigned int bucket  = getBucket(min, max, range/numberOfBuckets,sequence.duration);
-            int bitShift = sizeof(long) * 8 - 8;
-            sequence.seqID = bucket<<bitShift && sequence.seqID;
-        }
+            for (auto it =startIterator; it != endIterator; ++it) {
+                unsigned int bucket = getBucket(min, max, range / numberOfBuckets, it->duration);
+                int bitShift = sizeof(long) * 8 - 8;
+                it->seqID = bucket << bitShift && it->seqID;
+            }
 
-        if(removeSparseBuckets){
-            std::set<unsigned int> sequenceInPatient;
-            ips4o::parallel::sort(localSequenceVector.begin(), localSequenceVector.end(), timedSequencesSorter);
-            unsigned long lastSequence = localSequenceVector.begin()->seqID;
-            size_t count = 0;
-            auto it = localSequenceVector.begin();
-            while(it != localSequenceVector.end()){
-                if(it->seqID == lastSequence){
-                    sequenceInPatient.insert(it->patientID);
-                    ++count;
-                    ++it;
-                }else{
-                    lastSequence = it->seqID;
-                    if(sequenceInPatient.size() < sparsityThreshold){
-                        it = localSequenceVector.erase(it - count, it);
-                    }else{
+            if (removeSparseBuckets) {
+                std::set<unsigned int> sequenceInPatient;
+                ips4o::parallel::sort(startIterator, endIterator, timedSequencesSorter);
+                unsigned long lastSequence = startIterator->seqID;
+                size_t count = 0;
+                auto it = startIterator;
+                while (it != endIterator) {
+                    if (it->seqID == lastSequence) {
+                        sequenceInPatient.insert(it->patientID);
+                        ++count;
                         ++it;
+                    } else {
+                        lastSequence = it->seqID;
+                        if (sequenceInPatient.size() < sparsityThreshold) {
+                            it = globalSequences[i].erase(it - count, it);
+                        } else {
+                            ++it;
+                        }
+                        sequenceInPatient.clear();
+                        count = 0;
                     }
-                    sequenceInPatient.clear();
-                    count = 0;
                 }
             }
-            localSequenceVector.size();
-            globalSequences[omp_get_thread_num()].insert(globalSequences[omp_get_thread_num()].end(),localSequenceVector.begin(),localSequenceVector.end());
         }
     }
 
@@ -190,7 +187,6 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
         sequences.clear();
         sequences.shrink_to_fit();
     }
-    omp_set_num_threads(16);
     ips4o::parallel::sort(sortedSequences.begin(),sortedSequences.end(), timedSequencesSorter);
     return sortedSequences;
 }
@@ -248,21 +244,11 @@ unsigned int getBucket(unsigned int min, unsigned int max, int threshold, unsign
         return (duration-min)/threshold;
 }
 
-size_t findLastSameSequence(std::vector<temporalSequence> timedSequences, size_t start) {
-    size_t offset = 0;
-    while (timedSequences[start].seqID == timedSequences[start + offset].seqID && start + offset < timedSequences.size())
-        ++offset;
-//    for(; timedSequences[start].seqID == timedSequences[start + offset].seqID; offset++)
-    return offset;
-}
-
-
 std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::string> inputFilePaths, char inputFileDelimiter,
                                                           const std::string& outPutDirectory, const std::string& outputFilePrefix,
                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], long maxPatID, size_t sequenceCount,
                                                           const std::map<long,size_t>& sequenceMap){
     std::vector<temporalSequence> sequencesWithDuration;
-//    sequencesWithDuration.reserve(sequenceCount);
     int numOfProcs = omp_get_max_threads();
     std::vector<temporalSequence> localSequences[numOfProcs];
     for(std::vector<temporalSequence> vec : localSequences){
@@ -275,7 +261,6 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
         std::string filePath = inputFilePaths[i];
         std::pair<size_t, size_t>linesAndPatientInFile = countLinesAndPatientsInFile(filePath,inputFileDelimiter);
         size_t patientCount = linesAndPatientInFile.second;
-        size_t lineCount = linesAndPatientInFile.first;
 
         FILE *csvFilePointer = fopen(filePath.c_str(), "r");
         if (csvFilePointer == nullptr) {
@@ -291,19 +276,12 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
 
 #pragma omp parallel for private(local_patID) default (none) shared(sequenceMap, localSequences, i, patientId, csvFilePointer,outputFilePrefix,outPutDirectory, patIDColumns,phenxColumns, dateColumns, patientCount, readMutex, std::cout)
         for (size_t j = 0; j < patientCount; ++j) {
-//            if(j == patientCount -2){
-//                std::cout << "extracting temporal transitive sequences" << std::endl;
-//            }
-
             std::vector<dbMartEntry> patientEntries;
             readMutex.lock();
             patientEntries = extractPatient(csvFilePointer, patientId, patIDColumns[i], phenxColumns[i], dateColumns[i]);
             local_patID = patientId;
             ++patientId;
             readMutex.unlock();
-
-            //the number sequences is equal to the gaussian sum, initalize vector with size to avoid re
-            size_t numberOfSequences = (patientEntries.size() * (patientEntries.size() + 1)) / 2;
 
             for (int k = 0; k < patientEntries.size() - 1; ++k) {
                 for (int l = k + 1; l < patientEntries.size(); ++l) {
