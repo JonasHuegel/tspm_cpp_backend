@@ -1,11 +1,7 @@
 
 
-#include <omp.h>
-#include <mutex>
-#include "utils/utils.h"
-#include "sequencing.h"
+#include "utils/sequencing.h"
 
-const size_t * startPositions; //TODO check if really necessary, if not remove!
 
 #pragma clang diagnostic get push
 #pragma ide diagnostic ignored "openmp-use-default-none"
@@ -23,8 +19,6 @@ int main(int argc, char *argv[]) {
     bool createDuration = true;
     bool removeSparseBuckets = true;
     double sparsity = 0.005;
-    size_t patientPos[patientCount+1];
-    startPositions = patientPos;
 
     std::vector<std::string> inputFilePaths;
     inputFilePaths.push_back(fileName);

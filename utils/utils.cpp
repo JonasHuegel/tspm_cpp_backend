@@ -3,7 +3,6 @@
 #include <sys/stat.h>
 #include <set>
 #include "utils.h"
-extern size_t* startPositions;
 
 
 
@@ -40,7 +39,9 @@ long getTimeFromString(const char * date_string) {
 }
 
 
-std::vector<dbMartEntry> extractPatient(FILE* csv_file, int patId, int patIdColumn, int phenotypeIDColumn, int dateColumn) {
+std::vector<dbMartEntry>
+extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn, int phenotypeIDColumn,
+               int dateColumn) {
     if (csv_file == nullptr) {
         exit(EXIT_FAILURE);
     }
@@ -50,7 +51,7 @@ std::vector<dbMartEntry> extractPatient(FILE* csv_file, int patId, int patIdColu
     size_t len = 0;
     //TODO define end for cases when a file skips a patient number
     //TODO set end for last patID == largest patID
-    for(size_t i = startPositions[patId]; i < startPositions[patId + 1]; ++i){
+    for(size_t i = (*startPositions)[patId]; i < (*startPositions)[patId + 1]; ++i){
         getline(&line, &len, csv_file);
         lines = getTokensFromLine(std::string(line));
         dbMartEntry entry;
@@ -63,7 +64,8 @@ std::vector<dbMartEntry> extractPatient(FILE* csv_file, int patId, int patIdColu
     return  dbMartEntries;
 }
 
-std::pair<size_t,size_t> countLinesAndPatientsInFile(const std::basic_string<char>& filename, char delimiter){
+std::pair<size_t, size_t>
+determinePatientStartPositionsInFile(const std::basic_string<char> &filename, char delimiter, std::vector<size_t> *startPositions) {
     FILE *file = fopen(filename.c_str(), "r");
     size_t line_count = 0; //Headerline was skipped
     size_t pat_count = 0;
@@ -72,7 +74,7 @@ std::pair<size_t,size_t> countLinesAndPatientsInFile(const std::basic_string<cha
     memset(nextPatId,0, sizeof (nextPatId));
     bool detect_Patid = false;
     std::vector<char> patIDAsString;
-    startPositions[0] = 1;
+    startPositions->emplace_back(1);
     if(file != nullptr) {
         while (!feof(file)) {
             char nextchar = fgetc(file);
@@ -88,7 +90,7 @@ std::pair<size_t,size_t> countLinesAndPatientsInFile(const std::basic_string<cha
                     int nextPat = atoi(patIDAsString.data());
                     if (patId != nextPat) {
                         ++pat_count;
-                        startPositions[pat_count]=line_count;
+                        startPositions->emplace_back(line_count);
                         patId=nextPat;
                     }
                     detect_Patid = false;
@@ -102,6 +104,7 @@ std::pair<size_t,size_t> countLinesAndPatientsInFile(const std::basic_string<cha
     }
     fclose(file);
 //    #TODO check if file closed
+startPositions->emplace_back(line_count); // add end
     ++pat_count;//increase the patcount by one for the last patient (no increcement for this patient in the loop!)
     return std::make_pair(line_count,pat_count);
 }

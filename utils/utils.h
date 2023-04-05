@@ -18,7 +18,9 @@ struct dbMartEntry{
 
 };
 
-std::vector<dbMartEntry> extractPatient(FILE* csv_file, int patId, int patIdColumn = 0, int phenotypeIDColumn = 1, int dateColumn = 3);
+std::vector<dbMartEntry>
+extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn = 0, int phenotypeIDColumn = 1,
+               int dateColumn = 3);
 size_t countLinesInFile(const std::basic_string<char>& filename);
 std::vector<std::string> getTokensFromLine(const std::string& line);
 long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 6);
@@ -28,7 +30,8 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
 
 
 
-std::pair<size_t,size_t>  countLinesAndPatientsInFile(const std::basic_string<char>& filename, char delimiter);
+std::pair<size_t, size_t>
+determinePatientStartPositionsInFile(const std::basic_string<char> &filename, char delimiter, std::vector<size_t> *startPositions);
 long getFileSize(const std::string& filename);
 unsigned int getDuration(long startDate, long endDate);
 

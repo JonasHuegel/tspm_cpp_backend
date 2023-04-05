@@ -257,12 +257,15 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
     for(std::vector<temporalSequence> vec : localSequences){
         vec.reserve((sequenceCount/numOfProcs*1.1));
     }
+    std::vector<size_t> startPositions;
     size_t sequenceNum = 0;
     std::mutex readMutex;
     std::cout << "extracting temporal transitive sequences" << std::endl;
     for (int i = 0; i < inputFilePaths.size(); ++i){
         std::string filePath = inputFilePaths[i];
-        std::pair<size_t, size_t>linesAndPatientInFile = countLinesAndPatientsInFile(filePath,inputFileDelimiter);
+        std::pair<size_t, size_t>linesAndPatientInFile = determinePatientStartPositionsInFile(filePath,
+                                                                                              inputFileDelimiter,
+                                                                                              &startPositions);
         size_t patientCount = linesAndPatientInFile.second;
 
         FILE *csvFilePointer = fopen(filePath.c_str(), "r");
@@ -277,11 +280,12 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
         int patientId = 0;
         int local_patID;
 
-#pragma omp parallel for private(local_patID) default (none) shared(sequenceMap, localSequences, i, patientId, csvFilePointer,outputFilePrefix,outPutDirectory, patIDColumns,phenxColumns, dateColumns, patientCount, readMutex, std::cout)
+#pragma omp parallel for private(local_patID) default (none) shared(sequenceMap, localSequences, i, patientId, csvFilePointer,outputFilePrefix,outPutDirectory, patIDColumns,phenxColumns, dateColumns, patientCount, readMutex, startPositions)
         for (size_t j = 0; j < patientCount; ++j) {
             std::vector<dbMartEntry> patientEntries;
             readMutex.lock();
-            patientEntries = extractPatient(csvFilePointer, patientId, patIDColumns[i], phenxColumns[i], dateColumns[i]);
+            patientEntries = extractPatient(csvFilePointer,
+                                            &startPositions, patientId, patIDColumns[i], phenxColumns[i], dateColumns[i]);
             local_patID = patientId;
             ++patientId;
             readMutex.unlock();
@@ -325,11 +329,13 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
     std::mutex readMutex;
     std::mutex countMutex;
     int patIDLength = 7;
-
+    std::vector<size_t> startPositions;
     for (int i = 0; i < inputFilePaths.size(); ++i){
         size_t local_NumOfSequences = 0;
         std::string filePath = inputFilePaths[i];
-        std::pair<size_t, size_t>linesAndPatientInFile = countLinesAndPatientsInFile(filePath,inputFileDelimiter);
+        std::pair<size_t, size_t>linesAndPatientInFile = determinePatientStartPositionsInFile(filePath,
+                                                                                              inputFileDelimiter,
+                                                                                              &startPositions);
 
         size_t patientCount = linesAndPatientInFile.second;
         size_t lineCount = linesAndPatientInFile.first;
@@ -347,11 +353,13 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
         int patientId = 0;
         int local_patID;
 
-#pragma omp parallel for private(local_patID) default (none) shared(i, patientId, patIDLength, csvFilePointer,outputFilePrefix,outPutDirectory, patIDColumns,phenxColumns, dateColumns, patientCount, readMutex, countMutex,local_NumOfSequences)
+#pragma omp parallel for private(local_patID) default (none) shared(i, patientId, patIDLength, csvFilePointer,outputFilePrefix,outPutDirectory, patIDColumns,phenxColumns, dateColumns, patientCount, readMutex, countMutex,local_NumOfSequences, startPositions)
         for (size_t j = 0; j < patientCount; ++j) {
             std::vector<dbMartEntry> patientEntries;
             readMutex.lock();
-            patientEntries = extractPatient(csvFilePointer, patientId, patIDColumns[i], phenxColumns[i], dateColumns[i]);
+            patientEntries = extractPatient(csvFilePointer,
+                                            &startPositions, patientId, patIDColumns[i], phenxColumns[i],
+                                            dateColumns[i]);
             local_patID = patientId;
             ++patientId;
             readMutex.unlock();

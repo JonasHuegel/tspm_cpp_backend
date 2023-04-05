@@ -4,7 +4,7 @@
 
 #ifndef TSPM_CPP_BACKEND_SEQUENCING_H
 #define TSPM_CPP_BACKEND_SEQUENCING_H
-#include <utils.h>
+#include "utils.h"
 #include <algorithm>
 #include <set>
 #include <mutex>
