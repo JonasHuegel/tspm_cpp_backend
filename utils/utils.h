@@ -1,7 +1,7 @@
 
 #ifndef TSPM_UTILS_H
 #define TSPM_UTILS_H
-#include "ips4o.hpp"
+#include "../lib/ips4o/ips4o.hpp"
 #include <iostream>
 #include <iomanip>
 #include <vector>

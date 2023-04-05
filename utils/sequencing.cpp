@@ -2,11 +2,7 @@
 // Created by jonas on 03.03.23.
 //
 
-#include <algorithm>
-#include <set>
-#include <csignal>
 #include "sequencing.h"
-#include <omp.h>
 
 /**
  * Comparator for timedSequences struct. Added all greater as and smaller as cases for all attributes. In the equal
@@ -213,7 +209,7 @@ std::pair<size_t, size_t> findStartAndEnd(std::vector<temporalSequence> sequence
 }
 
 
-long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences){
+long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences, bool debug){
     FILE* sequenceFile;
     sequenceFile = fopen((filepath.append(fileName)).c_str(), "w");
     long written = 0;
@@ -221,13 +217,20 @@ long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimi
     if(sequenceFile == nullptr) {
         exit(EXIT_FAILURE);
     }
-
-    for (int i = 0; i < numOfSequences; ++i) {
-        std::string out = std::to_string(temporalSequences[i].patientID).append(1,delimiter)
-                .append(std::to_string((temporalSequences[i].seqID<<8)>>8)).append(1,delimiter)
-                .append(std::to_string(temporalSequences[i].seqID>>63)).append(1,delimiter)
-                .append(std::to_string(temporalSequences[i].duration)).append(1,'\n');
-        written += fwrite(out.c_str(),sizeof(char), out.length(),sequenceFile);
+    if(debug) {
+        for (int i = 0; i < numOfSequences; ++i) {
+            std::string out = std::to_string(temporalSequences[i].patientID).append(1, delimiter)
+                    .append(std::to_string((temporalSequences[i].seqID << 8) >> 8)).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].seqID >> 63)).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].duration)).append(1, '\n');
+            written += fwrite(out.c_str(), sizeof(char), out.length(), sequenceFile);
+        }
+    }else {
+        for (int i = 0; i < numOfSequences; ++i) {
+            std::string out = std::to_string(temporalSequences[i].patientID).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].seqID)).append(1, '\n');
+            written += fwrite(out.c_str(), sizeof(char), out.length(), sequenceFile);
+        }
     }
 
     fclose(sequenceFile);
