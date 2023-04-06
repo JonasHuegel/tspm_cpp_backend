@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
 project(tspm_cpp_backend)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 # added -fopenmp
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fopenmp -latomic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fopenmp -latomic")
 include_directories(utils)
 include_directories(lib/ips4o)
 

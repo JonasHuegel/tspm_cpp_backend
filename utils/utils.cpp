@@ -179,11 +179,13 @@ std::vector<std::string> getTokensFromLine(const std::string& line) {
     return vectorizedLine;
 }
 
-//TODO: linux/mac only
 long getFileSize(const std::string& filename){
-    struct stat st{};
-    stat(filename.c_str(),&st);
-    return st.st_size;
+    try {
+        return std::filesystem::file_size(filename);
+    } catch(std::filesystem::filesystem_error& e) {
+        std::cout << e.what() << '\n';
+        return 0;
+    }
 }
 
 std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDuration, const std::string& outputDir, const std::string& file_prefix) {

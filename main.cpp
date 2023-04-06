@@ -5,7 +5,6 @@
 
 #pragma clang diagnostic get push
 #pragma ide diagnostic ignored "openmp-use-default-none"
-
 int main(int argc, char *argv[]) {
     omp_set_num_threads(16);
     std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_fourtimes_processed.csv";
