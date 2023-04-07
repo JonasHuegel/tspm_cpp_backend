@@ -3,6 +3,11 @@
 //
 
 #include "sequencing.h"
+#include <parallel/algorithm>
+
+#ifdef __LINUX__
+#include "../lib/ips4o/ips4o.hpp"
+#endif
 
 /**
  * Comparator for timedSequences struct. Added all greater as and smaller as cases for all attributes. In the equal
@@ -60,7 +65,7 @@ int sequenceWorkflow(bool temporal, bool removeSparseBuckets, const std::vector<
     std::cout << "unique sequences: " << numOfUniqueSequences <<std::endl;
     if(!temporal){
         //TODO: Writeout reduced sequences
-        EXIT_SUCCESS;
+        return numOfUniqueSequences;
     }
     std::cout << "creating temporal sequences" << std::endl;
     //====== create buckets for each sequence
@@ -69,7 +74,7 @@ int sequenceWorkflow(bool temporal, bool removeSparseBuckets, const std::vector<
                                                                              patIDColumns, phenxColumns, dateColumns,
                                                                              maxPatID,sequenceCount,sequences,
                                                                              sparsityThreshold, removeSparseBuckets);
-    writeSequencesAsCsV("test.out", "/home/jonas/CLionProjects/tspm_cpp_backend/out/",'\t',temporalSequences.size(),temporalSequences.data());
+    writeSequencesAsCsV("test.out", outPutDirectory,'\t',temporalSequences.size(),temporalSequences.data());
     return 0;
 
 }
@@ -84,7 +89,13 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
                                                                                patIDColumns, phenxColumns, dateColumns, maxPatID,sequenceCount,sequences);
     std::cout << "created " <<timedSequences.size() << " sequences with duration. \nSorting:" << std::endl;
     std::vector<std::vector<temporalSequence>> globalSequences(omp_get_max_threads());
+
+#ifdef __LINUX__
     ips4o::parallel::sort(timedSequences.begin(),timedSequences.end(),timedSequencesSorter);
+#else
+    __gnu_parallel::sort(timedSequences.begin(), timedSequences.end(),timedSequencesSorter);
+#endif
+
     size_t numOfSeqs = timedSequences.size();
     std::mutex sequenceMutex;
     std::cout << "creating arrays for each thread" << std::endl;
@@ -150,7 +161,11 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
 
             if (removeSparseBuckets) {
                 std::set<unsigned int> sequenceInPatient;
-                ips4o::parallel::sort(startIterator, endIterator, timedSequencesSorter);
+#ifdef __LINUX__
+                ips4o::parallel::sort(startIterator, endIterator,timedSequencesSorter);
+#else
+                __gnu_parallel::sort(startIterator, endIterator,timedSequencesSorter);
+#endif
                 unsigned long lastSequence = startIterator->seqID;
                 size_t count = 0;
                 auto it = startIterator;
@@ -183,7 +198,11 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
         sequences.clear();
         sequences.shrink_to_fit();
     }
-    ips4o::parallel::sort(sortedSequences.begin(),sortedSequences.end(), timedSequencesSorter);
+#ifdef __LINUX__
+    ips4o::parallel::sort(timedSequences.begin(),timedSequences.end(),timedSequencesSorter);
+#else
+    __gnu_parallel::sort(timedSequences.begin(), timedSequences.end(),timedSequencesSorter);
+#endif
     return sortedSequences;
 }
 
@@ -273,9 +292,9 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
             exit(EXIT_FAILURE);
         }
         // read in header line before iterating over all files
-        char *header = nullptr;
-        size_t len = 0;
-        getline(&header, &len, csvFilePointer);
+        char line[2048];
+        size_t len = 2048;;
+        fgets(line, len, csvFilePointer);
 //   ====== Sequence Patients =======
         int patientId = 0;
         int local_patID;
@@ -345,9 +364,9 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
             exit(EXIT_FAILURE);
         }
         // read in header line before iterating over all files
-        char *header = nullptr;
-        size_t len = 0;
-        getline(&header, &len, csvFilePointer);
+        char line[2048];
+        size_t len = 2048;;
+        fgets(line, len, csvFilePointer);
         std::cout << "extracting sequences" << std::endl;
 //   ====== Sequence Patients =======
         int patientId = 0;

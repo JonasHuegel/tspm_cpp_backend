@@ -47,12 +47,12 @@ extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, i
     }
     std::vector<std::string> lines;
     std::vector<dbMartEntry> dbMartEntries;
-    char* line = nullptr;
-    size_t len = 0;
+    char line[2048];
+    size_t len = 2048;
     //TODO define end for cases when a file skips a patient number
     //TODO set end for last patID == largest patID
     for(size_t i = (*startPositions)[patId]; i < (*startPositions)[patId + 1]; ++i){
-        getline(&line, &len, csv_file);
+        fgets(line, len, csv_file);
         lines = getTokensFromLine(std::string(line));
         dbMartEntry entry;
         entry.patID = atoi(lines[patIdColumn].c_str());
@@ -218,8 +218,9 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
 
         }
 
+        fclose(patientFile);
         ++patientsPerThread[omp_get_thread_num()];
-        if(patientsPerThread[omp_get_thread_num()]>=10) {
+        if(patientsPerThread[omp_get_thread_num()]>=50) {
             map_mutex.lock();
             for (std::pair<long, size_t> entry: localmaps[omp_get_thread_num()]) {
                 globalSequenceMap[entry.first] += entry.second;
