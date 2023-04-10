@@ -20,7 +20,7 @@ struct temporalSequence{
 
 int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
-                              const std::string& outputFilePrefix, int patIDLength = 7);
+                              const std::string& outputFilePrefix, int patIDLength = 7, int numOfThreads =1);
 
 unsigned int getBucket(unsigned int min, unsigned int max, int threshold, unsigned int duration);
 
