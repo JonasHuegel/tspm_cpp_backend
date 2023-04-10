@@ -37,12 +37,13 @@ bool timedSequencesSorter(temporalSequence const& first, temporalSequence const&
 }
 
 
-int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t * startPositions,
+int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
-                              const std::string& outputFilePrefix, int patIDLength){
+                              const std::string& outputFilePrefix, int patIDLength, int numOfThreads){
 
-    size_t numOfSequences =0;
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix) reduction(+: numOfSequences)
+    size_t numOfSequences [numOfThreads];
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix) private(numOfSequences)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i <= numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
@@ -51,12 +52,11 @@ int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t
         size_t numberOfSequences = (numberOfDbMartEntries * (numOfPatientEntries + 1)) / 2;
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
-
-        for(int j = startPos; j < endPos;++j){
-            for (int k = j; k < endPos ; ++k) {
+        for(size_t j = startPos; j < endPos;++j){
+            for (size_t k = j; k < endPos ; ++k) {
                 sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
             }
-            numOfSequences += sequences.size();
+            numOfSequences [omp_get_thread_num()] += sequences.size();
 
             std::string patIDString = std::to_string(i);
             patIDString.insert(patIDString.begin(), patIDLength - patIDString.size(), '0');
@@ -64,7 +64,11 @@ int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t
             writeSequencesToBinaryFile(patientFileName, sequences);
         }
     }
-    return numOfSequences;
+    size_t sumOfSequences =0;
+    for(int i = 0; i< numOfThreads; ++i){
+        sumOfSequences += numOfSequences[i];
+    }
+    return sumOfSequences;
 }
 
 

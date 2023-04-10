@@ -18,7 +18,7 @@ struct temporalSequence{
     unsigned int patientID;
 }__attribute__((packed));
 
-int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t * startPositions,
+int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
                               const std::string& outputFilePrefix, int patIDLength = 7);
 
