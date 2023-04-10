@@ -37,6 +37,35 @@ bool timedSequencesSorter(temporalSequence const& first, temporalSequence const&
 }
 
 
+int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t * startPositions,
+                              size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
+                              const std::string& outputFilePrefix, int patIDLength){
+
+    size_t numOfSequences =0;
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix) reduction(+: numOfSequences)
+    for(size_t i = 0; i < numOfPatients; ++i){
+        size_t startPos = startPositions[i];
+        size_t endPos = i <= numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
+        size_t numOfPatientEntries = endPos - startPos;
+
+        size_t numberOfSequences = (numberOfDbMartEntries * (numOfPatientEntries + 1)) / 2;
+        std::vector<long> sequences;
+        sequences.reserve(numberOfSequences);
+
+        for(int j = startPos; j < endPos;++j){
+            for (int k = j; k < endPos ; ++k) {
+                sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
+            }
+            numOfSequences += sequences.size();
+
+            std::string patIDString = std::to_string(i);
+            patIDString.insert(patIDString.begin(), patIDLength - patIDString.size(), '0');
+            std::string patientFileName = std::string(outPutDirectory).append(outputFilePrefix).append(patIDString);
+            writeSequencesToBinaryFile(patientFileName, sequences);
+        }
+    }
+    return numOfSequences;
+}
 
 
 int sequenceWorkflow(bool temporal, bool removeSparseBuckets, const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
@@ -293,7 +322,7 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
         }
         // read in header line before iterating over all files
         char line[2048];
-        size_t len = 2048;;
+        size_t len = 2048;
         fgets(line, len, csvFilePointer);
 //   ====== Sequence Patients =======
         int patientId = 0;
