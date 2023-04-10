@@ -18,6 +18,10 @@ struct temporalSequence{
     unsigned int patientID;
 }__attribute__((packed));
 
+int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, size_t * startPositions,
+                              size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
+                              const std::string& outputFilePrefix, int patIDLength = 7);
+
 unsigned int getBucket(unsigned int min, unsigned int max, int threshold, unsigned int duration);
 
 
