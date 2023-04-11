@@ -2,6 +2,7 @@
 #ifndef TSPM_UTILS_H
 #define TSPM_UTILS_H
 #include "../lib/ips4o/ips4o.hpp"
+#include "dbMartEntry.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -9,15 +10,10 @@
 #include <cstring>
 #include <map>
 #include <omp.h>
+#include <mutex>
+#include <set>
 #include <filesystem>
 
-
-struct dbMartEntry{
-    int patID;
-    int phenID;
-    long date;
-
-};
 
 std::vector<dbMartEntry>
 extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn = 0, int phenotypeIDColumn = 1,
@@ -28,9 +24,6 @@ long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 6);
 size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long> sequences);
 long addDurationToSequence(long &back, long startDate, long endDate);
 std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDuration, const std::string& outputDir, const std::string& file_prefix);
-
-
-
 std::pair<size_t, size_t>
 determinePatientStartPositionsInFile(const std::basic_string<char> &filename, char delimiter, std::vector<size_t> *startPositions);
 long getFileSize(const std::string& filename);

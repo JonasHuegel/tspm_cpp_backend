@@ -1,10 +1,10 @@
-
-
 #include "utils/sequencing.h"
 
 
 #pragma clang diagnostic get push
 #pragma ide diagnostic ignored "openmp-use-default-none"
+
+
 int main(int argc, char *argv[]) {
     omp_set_num_threads(16);
     std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_fourtimes_processed.csv";
@@ -26,9 +26,30 @@ int main(int argc, char *argv[]) {
     int patIdColumns[1] = {0};
     int phenxIDColumns[1] = {1};
     int dateColumns[1] = {3};
-    sequenceWorkflow(createDuration, removeSparseBuckets, inputFilePaths, inputFileDelimiter,
-                     outputDir, description, patIdColumns, phenxIDColumns,
-                     dateColumns, patientCount, sparsity);
+//    sequenceWorkflow(createDuration, removeSparseBuckets, inputFilePaths, inputFileDelimiter,
+//                     outputDir, description, patIdColumns, phenxIDColumns,
+//                     dateColumns, patientCount, sparsity);
+
+
+    std::array<dbMartEntry,20> dbMart;
+    for (int i = 0; i < 20; ++i) {
+        dbMartEntry entry;
+        entry.patID = i%3;
+        entry.phenID = i%3 + i;
+        entry.date = INT64_MAX/(i+1);
+        dbMart[i] = entry;
+    }
+
+    std::sort(dbMart.begin(), dbMart.end(), dbMartSorter);
+    size_t startPositions[3];
+    for (int i = 1; i < 20; ++i) {
+        if(dbMart[i].patID != dbMart[i-1].patID){
+            startPositions[dbMart[i].patID] = i;
+        }
+    }
+    std::cout << extractSequencesFromArray(dbMart.data(), 3, startPositions,20,outputDir,description,7, 1);
+    std::cout << std::endl;
+    return 0;
 
 
 }

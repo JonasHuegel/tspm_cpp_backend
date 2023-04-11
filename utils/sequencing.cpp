@@ -9,33 +9,6 @@
 #include "../lib/ips4o/ips4o.hpp"
 #endif
 
-/**
- * Comparator for timedSequences struct. Added all greater as and smaller as cases for all attributes. In the equal
- * cases the next attribute should be used. In the case that all attributes are equal return false. The sequnceID is the
- * most important parameter, when to calculate the min/max values and the buckets for a unique sequence ID. The other
- * attributes are added for completeness.
- * @param first
- * @param second
- * @return
- */
-bool timedSequencesSorter(temporalSequence const& first, temporalSequence const& second) {
-    if(first.seqID < second.seqID)
-        return true;
-    if(first.seqID > second.seqID)
-        return false;
-    if (first.duration < second.duration)
-        return true;
-    if (first.duration < second.duration)
-        return false;
-    if (first.patientID < second.patientID)
-        return true;
-    if (first.patientID > second.patientID)
-        return false;
-
-    return false;
-
-}
-
 
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
@@ -44,7 +17,7 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
     size_t numOfSequences [numOfThreads]= { 0 };
 
     omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix) private(numOfSequences)
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix, numOfSequences)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
@@ -64,7 +37,7 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
         std::string patientFileName = std::string(outPutDirectory).append(outputFilePrefix).append(patIDString);
         writeSequencesToBinaryFile(patientFileName, sequences);
     }
-    size_t sumOfSequences =0;
+    size_t sumOfSequences = 0;
     for(int i = 0; i< numOfThreads; ++i){
         sumOfSequences += numOfSequences[i];
     }

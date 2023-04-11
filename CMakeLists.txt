@@ -11,4 +11,8 @@ include_directories(lib/ips4o)
 add_executable(tspm_cpp_backend
         utils/utils.cpp
         utils/utils.h
-        main.cpp utils/sequencing.cpp utils/sequencing.h)
+        main.cpp
+        utils/sequencing.cpp
+        utils/sequencing.h
+        utils/dbMartEntry.h
+        utils/temporalSequence.h utils/sorter.cpp utils/sorter.h)

@@ -4,6 +4,7 @@
 
 #ifndef TSPM_CPP_BACKEND_SEQUENCING_H
 #define TSPM_CPP_BACKEND_SEQUENCING_H
+#include "sorter.h"
 #include "utils.h"
 #include <algorithm>
 #include <set>
@@ -11,12 +12,6 @@
 #include <omp.h>
 #include <math.h>
 
-
-struct temporalSequence{
-    long seqID;
-    unsigned int duration;
-    unsigned int patientID;
-}__attribute__((packed));
 
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
