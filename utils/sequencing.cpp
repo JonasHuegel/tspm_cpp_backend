@@ -37,32 +37,32 @@ bool timedSequencesSorter(temporalSequence const& first, temporalSequence const&
 }
 
 
-int extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
+size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
                               const std::string& outputFilePrefix, int patIDLength, int numOfThreads){
 
-    size_t numOfSequences [numOfThreads];
+    size_t numOfSequences [numOfThreads]= { 0 };
+
     omp_set_num_threads(numOfThreads);
 #pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix) private(numOfSequences)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
-        size_t endPos = i <= numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
+        size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
         size_t numOfPatientEntries = endPos - startPos;
 
-        size_t numberOfSequences = (numberOfDbMartEntries * (numOfPatientEntries + 1)) / 2;
+        size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
         for(size_t j = startPos; j < endPos;++j){
             for (size_t k = j; k < endPos ; ++k) {
                 sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
             }
-            numOfSequences [omp_get_thread_num()] += sequences.size();
-
-            std::string patIDString = std::to_string(i);
-            patIDString.insert(patIDString.begin(), patIDLength - patIDString.size(), '0');
-            std::string patientFileName = std::string(outPutDirectory).append(outputFilePrefix).append(patIDString);
-            writeSequencesToBinaryFile(patientFileName, sequences);
         }
+        numOfSequences [omp_get_thread_num()] += sequences.size();
+        std::string patIDString = std::to_string(i);
+        patIDString.insert(patIDString.begin(), patIDLength - patIDString.size(), '0');
+        std::string patientFileName = std::string(outPutDirectory).append(outputFilePrefix).append(patIDString);
+        writeSequencesToBinaryFile(patientFileName, sequences);
     }
     size_t sumOfSequences =0;
     for(int i = 0; i< numOfThreads; ++i){
