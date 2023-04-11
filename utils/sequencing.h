@@ -13,6 +13,9 @@
 #include <math.h>
 
 
+std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
+                                                            size_t numberOfDbMartEntries, std::map<long, size_t> sparseSequencesIDs,  int numOfThreads);
+
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
                               const std::string& outputFilePrefix, int patIDLength = 7, int numOfThreads = 1);

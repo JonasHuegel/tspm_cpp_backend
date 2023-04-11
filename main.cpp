@@ -49,6 +49,17 @@ int main(int argc, char *argv[]) {
     }
     std::cout << extractSequencesFromArray(dbMart.data(), 3, startPositions,20,outputDir,description,7, 1);
     std::cout << std::endl;
+    std::map<long, size_t> sequences = summarizeSequences(3, false, outputDir,description);
+    size_t sparsityThreshold = 3 * sparsity;
+    std::cout << "sparsity= " << sparsity << " sparsity threshold: " << sparsityThreshold <<std::endl;
+    for(auto it = sequences.begin(); it != sequences.end();){
+        if(it->second < sparsityThreshold){
+            it = sequences.erase(it);
+        } else{
+            ++it;
+        }
+    }
+    std::vector<temporalSequence> sparseSequences = createSparseTemporalSequences(dbMart.data(), 3, startPositions,20, sequences,16);
     return 0;
 
 

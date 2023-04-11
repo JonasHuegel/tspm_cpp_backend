@@ -44,6 +44,52 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
     return sumOfSequences;
 }
 
+std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
+                                                            size_t numberOfDbMartEntries, std::map<long, size_t> sparseSequencesIDs,  int numOfThreads){
+    std::vector<temporalSequence> localSequences[numOfThreads];
+    for(std::vector<temporalSequence> vec : localSequences){
+        vec.reserve((numberOfDbMartEntries/numOfThreads*1.1));
+    }
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, sparseSequencesIDs, localSequences)
+    for(size_t i = 0; i < numOfPatients; ++i){
+        size_t startPos = startPositions[i];
+        size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
+        size_t numOfPatientEntries = endPos - startPos;
+        unsigned patientId = dbMart[i].patID;
+        size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
+        std::vector<long> sequences;
+        sequences.reserve(numberOfSequences);
+        for(size_t j = startPos; j < endPos;++j) {
+            for (size_t k = j; k < endPos; ++k) {
+                long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
+                if (sparseSequencesIDs.find(sequence) != sparseSequencesIDs.end()) {
+                    unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
+                    temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) patientId)};
+                    localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);
+                }
+            }
+
+
+        }
+    }
+
+    std::cout << "merging sequencing vectors from all threads" << std::endl;
+    std::vector<temporalSequence> allSequences;
+    size_t sumOfSequences = 0;
+    for(int i = 0; i< numOfThreads; ++i){
+        sumOfSequences += localSequences[i].size();
+        allSequences.insert(allSequences.end(), localSequences[i].begin(), localSequences[i].end());
+        localSequences[i].clear();
+        localSequences->shrink_to_fit();
+    }
+    if(allSequences.size() != sumOfSequences){
+        std::cout << "Error during vector merging! Expected " << sumOfSequences << " sequences, but allSequences stores "
+        << allSequences.size() << " sequences!" <<std::endl;
+    }
+    return allSequences;
+}
+
 
 int sequenceWorkflow(bool temporal, bool removeSparseBuckets, const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
                      const std::string& outPutDirectory, const std::string& outputFilePrefix,
