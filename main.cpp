@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
 
     std::sort(dbMart.begin(), dbMart.end(), dbMartSorter);
     size_t startPositions[3];
+    startPositions[0] = 0;
     for (int i = 1; i < 20; ++i) {
         if(dbMart[i].patID != dbMart[i-1].patID){
             startPositions[dbMart[i].patID] = i;

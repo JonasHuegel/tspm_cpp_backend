@@ -13,7 +13,7 @@
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
                               const std::string& outputFilePrefix, int patIDLength, int numOfThreads){
-
+    omp_set_num_threads(numOfThreads);
     size_t numOfSequences [numOfThreads]= { 0 };
 
     omp_set_num_threads(numOfThreads);
@@ -26,7 +26,7 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
         size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
-        for(size_t j = startPos; j < endPos;++j){
+        for(size_t j = startPos; j < endPos-1;++j){
             for (size_t k = j; k < endPos ; ++k) {
                 sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
             }
@@ -47,9 +47,9 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
 std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                                                             size_t numberOfDbMartEntries, std::map<long, size_t> sparseSequencesIDs,  int numOfThreads){
     std::vector<temporalSequence> localSequences[numOfThreads];
-    for(std::vector<temporalSequence> vec : localSequences){
-        vec.reserve((numberOfDbMartEntries/numOfThreads*1.1));
-    }
+//    for(std::vector<temporalSequence> vec : localSequences){
+//        vec.reserve((numberOfDbMartEntries/numOfThreads*1.1));
+//    }
     omp_set_num_threads(numOfThreads);
 #pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, sparseSequencesIDs, localSequences)
     for(size_t i = 0; i < numOfPatients; ++i){
@@ -60,7 +60,7 @@ std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart
         size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
-        for(size_t j = startPos; j < endPos;++j) {
+        for(size_t j = startPos; j < endPos -1;++j) {
             for (size_t k = j; k < endPos; ++k) {
                 long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
                 if (sparseSequencesIDs.find(sequence) != sparseSequencesIDs.end()) {
@@ -417,7 +417,7 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
         }
         // read in header line before iterating over all files
         char line[2048];
-        size_t len = 2048;;
+        size_t len = 2048;
         fgets(line, len, csvFilePointer);
         std::cout << "extracting sequences" << std::endl;
 //   ====== Sequence Patients =======
