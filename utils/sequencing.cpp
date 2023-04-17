@@ -4,10 +4,8 @@
 
 #include "sequencing.h"
 #include <parallel/algorithm>
-
-#ifdef __LINUX__
 #include "../lib/ips4o/ips4o.hpp"
-#endif
+
 
 
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
@@ -141,12 +139,7 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
                                                                                patIDColumns, phenxColumns, dateColumns, maxPatID,sequenceCount,sequences);
     std::cout << "created " <<timedSequences.size() << " sequences with duration. \nSorting:" << std::endl;
     std::vector<std::vector<temporalSequence>> globalSequences(omp_get_max_threads());
-
-#ifdef __LINUX__
     ips4o::parallel::sort(timedSequences.begin(),timedSequences.end(),timedSequencesSorter);
-#else
-    __gnu_parallel::sort(timedSequences.begin(), timedSequences.end(),timedSequencesSorter);
-#endif
 
     size_t numOfSeqs = timedSequences.size();
     std::mutex sequenceMutex;
@@ -213,11 +206,7 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
 
             if (removeSparseBuckets) {
                 std::set<unsigned int> sequenceInPatient;
-#ifdef __LINUX__
                 ips4o::parallel::sort(startIterator, endIterator,timedSequencesSorter);
-#else
-                __gnu_parallel::sort(startIterator, endIterator,timedSequencesSorter);
-#endif
                 unsigned long lastSequence = startIterator->seqID;
                 size_t count = 0;
                 auto it = startIterator;
@@ -250,11 +239,8 @@ extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char in
         sequences.clear();
         sequences.shrink_to_fit();
     }
-#ifdef __LINUX__
     ips4o::parallel::sort(timedSequences.begin(),timedSequences.end(),timedSequencesSorter);
-#else
-    __gnu_parallel::sort(timedSequences.begin(), timedSequences.end(),timedSequencesSorter);
-#endif
+
     return sortedSequences;
 }
 
