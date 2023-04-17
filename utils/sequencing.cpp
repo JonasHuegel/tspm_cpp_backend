@@ -43,7 +43,7 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
 }
 
 std::vector<temporalSequence>
-createNoNSparseTemporalSequences(dbMartEntry *dbMart, size_t numOfPatients, const size_t *startPositions,
+createNonSparseTemporalSequences(dbMartEntry *dbMart, size_t numOfPatients, const size_t *startPositions,
                                  size_t numberOfDbMartEntries, std::map<long, size_t> nonSparseSequencesIDs,
                                  int numOfThreads, bool durationInWeeks, bool durationInMonths) {
     std::vector<temporalSequence> localSequences[numOfThreads];
