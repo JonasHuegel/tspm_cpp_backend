@@ -45,10 +45,10 @@ extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, i
     std::vector<dbMartEntry> dbMartEntries;
     char line[2048];
     size_t len = 2048;
-    //TODO define end for cases when a file skips a patient number
-    //TODO set end for last patID == largest patID
     for(size_t i = (*startPositions)[patId]; i < (*startPositions)[patId + 1]; ++i){
-        fgets(line, len, csv_file);
+        if(fgets(line, len, csv_file) == NULL){
+            return dbMartEntries;
+        }
         lines = getTokensFromLine(std::string(line));
         dbMartEntry entry;
         entry.patID = atoi(lines[patIdColumn].c_str());

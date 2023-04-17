@@ -332,7 +332,9 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
         // read in header line before iterating over all files
         char line[2048];
         size_t len = 2048;
-        fgets(line, len, csvFilePointer);
+        if (fgets(line, len, csvFilePointer) == NULL){
+            return sequencesWithDuration;
+        };
 //   ====== Sequence Patients =======
         int patientId = 0;
         int local_patID;
@@ -404,7 +406,9 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
         // read in header line before iterating over all files
         char line[2048];
         size_t len = 2048;
-        fgets(line, len, csvFilePointer);
+        if(fgets(line, len, csvFilePointer) == NULL){
+            return 0;
+        }
         std::cout << "extracting sequences" << std::endl;
 //   ====== Sequence Patients =======
         int patientId = 0;
