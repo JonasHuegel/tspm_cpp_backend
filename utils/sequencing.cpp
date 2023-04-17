@@ -42,14 +42,13 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
     return sumOfSequences;
 }
 
-std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
-                                                            size_t numberOfDbMartEntries, std::map<long, size_t> sparseSequencesIDs,  int numOfThreads){
+std::vector<temporalSequence>
+createNoNSparseTemporalSequences(dbMartEntry *dbMart, size_t numOfPatients, const size_t *startPositions,
+                                 size_t numberOfDbMartEntries, std::map<long, size_t> nonSparseSequencesIDs,
+                                 int numOfThreads, bool durationInWeeks, bool durationInMonths) {
     std::vector<temporalSequence> localSequences[numOfThreads];
-//    for(std::vector<temporalSequence> vec : localSequences){
-//        vec.reserve((numberOfDbMartEntries/numOfThreads*1.1));
-//    }
     omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, sparseSequencesIDs, localSequences)
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationInMonths, durationInWeeks)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
@@ -61,17 +60,19 @@ std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart
         for(size_t j = startPos; j < endPos -1;++j) {
             for (size_t k = j; k < endPos; ++k) {
                 long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
-                if (sparseSequencesIDs.find(sequence) != sparseSequencesIDs.end()) {
+                if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
                     unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
+                    if(durationInWeeks && ! durationInMonths){
+                        duration  = duration / 7;
+                    }else if(durationInMonths && !durationInWeeks){
+                        duration = duration / 30.437;
+                    }
                     temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) patientId)};
                     localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);
                 }
             }
-
-
         }
     }
-
     std::cout << "merging sequencing vectors from all threads" << std::endl;
     std::vector<temporalSequence> allSequences;
     size_t sumOfSequences = 0;
@@ -128,6 +129,10 @@ int sequenceWorkflow(bool temporal, bool removeSparseBuckets, const std::vector<
     return 0;
 
 }
+
+
+
+
 
 std::vector<temporalSequence>
 extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char inputFileDelimiter,

@@ -13,8 +13,10 @@
 #include <math.h>
 
 
-std::vector<temporalSequence> createSparseTemporalSequences(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
-                                                            size_t numberOfDbMartEntries, std::map<long, size_t> sparseSequencesIDs,  int numOfThreads);
+std::vector<temporalSequence>
+createNoNSparseTemporalSequences(dbMartEntry *dbMart, size_t numOfPatients, const size_t *startPositions,
+                                 size_t numberOfDbMartEntries, std::map<long, size_t> nonSparseSequencesIDs,
+                                 int numOfThreads, bool durationInWeeks = false, bool durationInMonths = false);
 
 size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, const size_t * startPositions,
                               size_t numberOfDbMartEntries,  const std::string& outPutDirectory,
@@ -31,6 +33,8 @@ std::vector<temporalSequence> createSequencesWithDuration(std::vector<std::strin
                                                                const std::string& outPutDirectory, const std::string& outputFilePrefix,
                                                                int patIDColumns[], int phenxColumns[], int dateColumns[], long maxPatID, size_t sequenceCount,
                                                                const std::map<long,size_t>& sequenceMap);
+
+
 
 std::vector<temporalSequence>
 extractTemporalSequences(const std::vector<std::string> &inputFilePaths, char inputFileDelimiter,

@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
             ++it;
         }
     }
-    std::vector<temporalSequence> sparseSequences = createSparseTemporalSequences(dbMart.data(), 3, startPositions,20, sequences,16);
+    std::vector<temporalSequence> sparseSequences = createNoNSparseTemporalSequences(dbMart.data(), 3, startPositions,
+                                                                                     20, sequences, 16, false, false);
     return 0;
 
 
