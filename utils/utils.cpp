@@ -116,8 +116,8 @@ startPositions->emplace_back(line_count); // add end
 
 
 unsigned int getDuration(long startDate, long endDate) {
-    unsigned int milliSecondsPerDay = 1000 * 60 * 60 * 24;
-    unsigned int duration = (endDate - startDate) / milliSecondsPerDay;
+    unsigned int secondsPerDay = 60 * 60 * 24;
+    unsigned int duration = (endDate - startDate) / secondsPerDay;
     return duration;
 }
 
