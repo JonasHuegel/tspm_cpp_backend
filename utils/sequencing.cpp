@@ -25,7 +25,7 @@ size_t extractSequencesFromArray(dbMartEntry * dbMart, size_t numOfPatients, con
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
         for(size_t j = startPos; j < endPos-1;++j){
-            for (size_t k = j; k < endPos ; ++k) {
+            for (size_t k = j + 1; k < endPos ; ++k) {
                 sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
             }
         }
@@ -58,7 +58,7 @@ createNonSparseTemporalSequences(dbMartEntry *dbMart, size_t numOfPatients, cons
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
         for(size_t j = startPos; j < endPos -1;++j) {
-            for (size_t k = j; k < endPos; ++k) {
+            for (size_t k = j +1; k < endPos; ++k) {
                 long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
                 if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
                     unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
