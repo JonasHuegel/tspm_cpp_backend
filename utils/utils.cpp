@@ -105,47 +105,6 @@ startPositions->emplace_back(line_count); // add end
     return std::make_pair(line_count,pat_count);
 }
 
-//size_t countLinesInFile(const std::basic_string<char>& filename){
-//    FILE *file = fopen(filename.c_str(), "r");
-//    size_t line_count = 0;
-//    int patId = 0;
-//    char nextPatId[20];
-//    memset(nextPatId,0, sizeof (nextPatId));
-//    int posInLine = 0;
-//    bool detect_Patid = false;
-//    startPositions[0] = 1;
-//    if(file != nullptr) {
-//        while (!feof(file)) {
-//            char nextchar = fgetc(file);
-//
-//            if (nextchar == '\n') {
-//                posInLine = 0;
-//                ++line_count;
-//                detect_Patid = true;
-//            } else if (detect_Patid) {
-//                if (nextchar != ',') {
-//                    nextPatId[posInLine] = nextchar;
-//                    ++posInLine;
-//                } else {
-//                    nextPatId[posInLine] = '\0';
-//                    int nextPat = atoi(nextPatId);
-//                    if (patId != nextPat) {
-//                        ++patId;
-//                        startPositions[patId] = line_count;
-//
-//                    }
-//                    detect_Patid = false;
-//                    memset(nextPatId, 0, sizeof(nextPatId));
-//                }
-//            }
-//        }
-//    } else{
-////        TODO: throw error
-//    }
-//    fclose(file);
-////    #TODO check if file closed
-//    return line_count;
-//}
 
 //long addDurationToSequence(long &back, long startDate, long endDate) {
 //    long milliSecondsPerDay = 1000 * 60 * 60 * 24;
