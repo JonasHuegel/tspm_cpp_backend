@@ -1,6 +1,28 @@
 #include "utils.h"
 
 
+std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
+                                              int dateColumn, char delim){
+    if (csv_file == nullptr) {
+        exit(EXIT_FAILURE);
+    }
+    std::vector<std::string> lines;
+    std::vector<dbMartEntry> dbMartEntries;
+    char line[2048];
+    size_t len = 2048;
+    while(fgets(line, len, csv_file) != NULL){
+        lines = getTokensFromLine(std::string(line), delim);
+        dbMartEntry entry;
+        entry.patID = atoi(lines[patIdColumn].c_str());
+        entry.phenID = atoi(lines[phenotypeIDColumn].c_str());
+        entry.date = getTimeFromString(lines[dateColumn].c_str());
+        dbMartEntries.emplace_back(entry);
+    }
+    return  dbMartEntries;
+
+
+}
+
 
 size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long> sequences){
     FILE* patientFile;
@@ -49,7 +71,7 @@ extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, i
         if(fgets(line, len, csv_file) == NULL){
             return dbMartEntries;
         }
-        lines = getTokensFromLine(std::string(line));
+        lines = getTokensFromLine(std::string(line), ',');
         dbMartEntry entry;
         entry.patID = atoi(lines[patIdColumn].c_str());
         entry.phenID = atoi(lines[phenotypeIDColumn].c_str());
@@ -106,26 +128,17 @@ startPositions->emplace_back(line_count); // add end
 }
 
 
-//long addDurationToSequence(long &back, long startDate, long endDate) {
-//    long milliSecondsPerDay = 1000 * 60 * 60 * 24;
-//    long duration = (endDate-startDate)%milliSecondsPerDay;
-//    int bitsForDuration = 40;
-//    back = (duration << bitsForDuration) | back;
-//    return back;
-//}
-
-
 unsigned int getDuration(long startDate, long endDate) {
     unsigned int secondsPerDay = 60 * 60 * 24;
     unsigned int duration = (endDate - startDate) / secondsPerDay;
     return duration;
 }
 
-std::vector<std::string> getTokensFromLine(const std::string& line) {
+std::vector<std::string> getTokensFromLine(const std::string &line, char delim) {
     std::vector<std::string> vectorizedLine;
     size_t start;
     size_t end = 0;
-    char delim = ',';
+
 
     while ((start = line.find_first_not_of(delim, end)) != std::string::npos) {
         end = line.find(delim, start);
@@ -158,7 +171,6 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
         std::string patientFileName = std::string(outputDir).append(file_prefix).append(patIDString);
         long numberOfSequences = getFileSize(patientFileName)/sizeof(long);
         FILE* patientFile = fopen(patientFileName.c_str(),"rb");
-//        std::cout << "open file: " << patientFileName << std::endl;
 
         std::set<long> patientSequenceSet;
         for (int j = 0; j < numberOfSequences; ++j) {
@@ -196,3 +208,32 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
     return globalSequenceMap;
 }
 
+long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences, bool debug){
+    FILE* sequenceFile;
+    sequenceFile = fopen((filepath.append(fileName)).c_str(), "w");
+    long written = 0;
+
+    if(sequenceFile == nullptr) {
+        exit(EXIT_FAILURE);
+    }
+    if(debug) {
+        for (int i = 0; i < numOfSequences; ++i) {
+            std::string out = std::to_string(temporalSequences[i].patientID).append(1, delimiter)
+                    .append(std::to_string((temporalSequences[i].seqID << 8) >> 8)).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].seqID >> 63)).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].duration)).append(1, '\n');
+            written += fwrite(out.c_str(), sizeof(char), out.length(), sequenceFile);
+        }
+    }else {
+        for (int i = 0; i < numOfSequences; ++i) {
+            std::string out = std::to_string(temporalSequences[i].patientID).append(1, delimiter)
+                    .append(std::to_string(temporalSequences[i].seqID)).append(1, '\n');
+            written += fwrite(out.c_str(), sizeof(char), out.length(), sequenceFile);
+        }
+    }
+
+    fclose(sequenceFile);
+    return written;
+
+
+}

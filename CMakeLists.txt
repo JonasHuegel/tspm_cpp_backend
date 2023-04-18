@@ -15,4 +15,4 @@ add_executable(tspm_cpp_backend
         utils/sequencing.cpp
         utils/sequencing.h
         utils/dbMartEntry.h
-        utils/temporalSequence.h utils/sorter.cpp utils/sorter.h)
+        utils/temporalSequence.h utils/sorter.cpp utils/sorter.h utils/workflows.cpp utils/workflows.h)
