@@ -32,10 +32,10 @@ int main(int argc, char *argv[]) {
     int patIdColumns[1] = {0};
     int phenxIDColumns[1] = {1};
     int dateColumns[1] = {3};
-    sequenceWorkflowFromCsVFiles( inputFilePaths, inputFileDelimiter, patIdColumns, phenxIDColumns,
+    std::vector<temporalSequence> seq = sequenceWorkflowFromCsVFiles( inputFilePaths, inputFileDelimiter, patIdColumns, phenxIDColumns,
                                   dateColumns,outputDir, description, removeSparseSequences,
                                   sparsity,createTemporalBuckets,durationInWeeks, durationInMonths, removeSparseBuckets,7,16 );
-
+    std::cout<< "Number of sequences: " << seq.size();
 
 //    std::vector<dbMartEntry> dbMart;
 //    for (int i = 0; i < 20; ++i) {

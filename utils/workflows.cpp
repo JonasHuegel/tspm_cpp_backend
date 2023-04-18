@@ -34,7 +34,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
     }
 
     std::vector<temporalSequence> sequences;
-    if(createTemporalBuckets){
+    if(!createTemporalBuckets){
         std::cout << "extracting sequences" << std::endl;
         sequences = extractNonSparseSequences(dbMart, numOfPatients,startPositions.data(), sequenceCount, numOfThreads, durationInWeeks, durationInMonths);
 
