@@ -45,6 +45,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
                                              durationInWeeks, durationInMonths, sparsity_value,
                                              removeSparseTemporalBuckets);
     }
+    ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter);
     return sequences;
 
 }
