@@ -141,7 +141,7 @@ std::vector<size_t> extractStartPositions(std::vector<dbMartEntry> &dbMart) {
     ips4o::parallel::sort(dbMart.begin(), dbMart.end(), dbMartSorter);
     std::vector<size_t> startPositions;
     startPositions.emplace_back(0);
-    for (int i = 0; i < dbMart.size(); ++i) {
+    for (int i = 1; i < dbMart.size(); ++i) {
         if(dbMart[i].patID != dbMart[i-1].patID){
             startPositions.emplace_back(i);
         }
