@@ -195,11 +195,9 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
         size_t numOfPatientEntries = endPos - startPos;
-        unsigned patientId = dbMart[i].patID;
-        size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
-        std::vector<long> sequences;
-        sequences.reserve(numberOfSequences);
-        for(size_t j = startPos; j < endPos -1;++j) {
+        unsigned patientId = dbMart[startPos].patID;
+
+        for(size_t j = startPos; j < endPos - 1; ++j) {
             for (size_t k = j + 1; k < endPos; ++k) {
                 long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
                 if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
@@ -218,7 +216,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
     std::cout << "merging sequencing vectors from all threads" << std::endl;
     std::vector<temporalSequence> allSequences;
     size_t sumOfSequences = 0;
-    for(int i = 0; i< numOfThreads; ++i){
+    for(int i = 0; i < numOfThreads; ++i){
         sumOfSequences += localSequences[i].size();
         allSequences.insert(allSequences.end(), localSequences[i].begin(), localSequences[i].end());
         localSequences[i].clear();
