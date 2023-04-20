@@ -159,13 +159,13 @@ size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfP
 #pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix, numOfSequences)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
-        size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
+        size_t endPos = i < numOfPatients - 1 ? startPositions[i+1] : numberOfDbMartEntries;
         size_t numOfPatientEntries = endPos - startPos;
 
-        size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries + 1)) / 2;
+        size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries - 1)) / 2;
         std::vector<long> sequences;
         sequences.reserve(numberOfSequences);
-        for(size_t j = startPos; j < endPos-1;++j){
+        for(size_t j = startPos; j < endPos - 1; ++j){
             for (size_t k = j + 1; k < endPos ; ++k) {
                 sequences.emplace_back(createSequence(dbMart[j].phenID, dbMart[k].phenID));
             }
@@ -194,8 +194,6 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
-        size_t numOfPatientEntries = endPos - startPos;
-        unsigned patientId = dbMart[startPos].patID;
 
         for(size_t j = startPos; j < endPos - 1; ++j) {
             for (size_t k = j + 1; k < endPos; ++k) {
@@ -207,7 +205,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
                     }else if(durationInMonths && !durationInWeeks){
                         duration = duration / 30.437;
                     }
-                    temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) patientId)};
+                    temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) i)};
                     localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);
                 }
             }
@@ -220,7 +218,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
         sumOfSequences += localSequences[i].size();
         allSequences.insert(allSequences.end(), localSequences[i].begin(), localSequences[i].end());
         localSequences[i].clear();
-        localSequences->shrink_to_fit();
+        localSequences[i].shrink_to_fit();
     }
     if(allSequences.size() != sumOfSequences){
         std::cout << "Error during vector merging! Expected " << sumOfSequences << " sequences, but allSequences stores "
