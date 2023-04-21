@@ -130,7 +130,7 @@ startPositions->emplace_back(line_count); // add end
 
 unsigned int getDuration(long startDate, long endDate) {
     unsigned int secondsPerDay = 60 * 60 * 24;
-    unsigned int duration = (endDate - startDate) / secondsPerDay;
+    unsigned int duration = std::abs(endDate - startDate) / secondsPerDay;
     return duration;
 }
 
