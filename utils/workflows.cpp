@@ -11,12 +11,22 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
                                                int numOfThreads){
     std::vector<size_t> startPositions = extractStartPositions(dbMart);
     size_t numOfPatients = startPositions.size();
-    //===== extract sequences
+
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+    std::string stringPath = outPutDirectory;
+    stringPath.append(oss.str()).append("/");
+    std::filesystem::path outputPath = std::filesystem::u8path(stringPath);
+    std::filesystem::create_directory(outputPath);
+
+    //===== extract sequence
     std::cout << "extracting transitive sequences" << std::endl;
-    size_t numOfSequences  = extractSequencesFromArray(dbMart, numOfPatients,startPositions.data(), outPutDirectory, outputFilePrefix,patIdLength, numOfThreads);
+    size_t numOfSequences  = extractSequencesFromArray(dbMart, numOfPatients,startPositions.data(), outputPath.string(), outputFilePrefix,patIdLength, numOfThreads);
     std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
     std::map<long, size_t> sequenceCount = summarizeSequences(numOfPatients, false,
-                                                              outPutDirectory,outputFilePrefix);
+                                                              outputPath.string(),outputFilePrefix);
     if(removeSparseSequences) {
         //===== remove sparse sequences
         std::cout << "removing sparse sequences" << std::endl;

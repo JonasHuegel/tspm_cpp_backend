@@ -5,6 +5,7 @@
 #define TSPM_CPP_BACKEND_WORKFLOWS_H
 #include "sequencing.h"
 #include "sorter.h"
+#include <ctime>
 
 std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string& outPutDirectory,
                                                const std::string& outputFilePrefix, bool removeSparseSequences,

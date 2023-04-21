@@ -5,7 +5,7 @@
 #include "sequencing.h"
 #include <parallel/algorithm>
 #include "../lib/ips4o/ips4o.hpp"
-
+#include <string>
 
 
 std::vector<temporalSequence> extractTemporalSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
