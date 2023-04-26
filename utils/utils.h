@@ -22,7 +22,7 @@ extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, i
 
 std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
-long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 6);
+long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
 
 size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long> sequences);
 
