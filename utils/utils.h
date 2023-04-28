@@ -15,7 +15,6 @@
 #include <set>
 #include <filesystem>
 
-
 std::vector<dbMartEntry>
 extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn = 0, int phenotypeIDColumn = 1,
                int dateColumn = 3);
@@ -44,5 +43,7 @@ std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, i
 
 long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
                          temporalSequence * temporalSequences, bool debug =false);
+
+std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
 
 #endif //TSPM_UTILS_H

@@ -31,7 +31,7 @@ size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long>
     if(patientFile!= nullptr) {
        written = std::fwrite(&sequences[0], 1, sequences.size() * sizeof(long), patientFile);
     }else{
-        exit(EXIT_FAILURE);
+        return 0;
     }
     fclose(patientFile);
     return written;
@@ -214,7 +214,7 @@ long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimi
     long written = 0;
 
     if(sequenceFile == nullptr) {
-        exit(EXIT_FAILURE);
+        return -1;
     }
     if(debug) {
         for (int i = 0; i < numOfSequences; ++i) {
@@ -236,4 +236,16 @@ long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimi
     return written;
 
 
+}
+
+std::filesystem::path createOutputFilePath(const std::string &outPutDirectory) {
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+    std::string stringPath = outPutDirectory;
+    stringPath.append(oss.str()).append("/");
+    std::filesystem::path outputPath = std::filesystem::u8path(stringPath);
+    std::filesystem::create_directories(outputPath);
+    return outputPath;
 }

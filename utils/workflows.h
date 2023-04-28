@@ -7,17 +7,18 @@
 #include "sorter.h"
 #include <ctime>
 
-std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string& outPutDirectory,
-                                               const std::string& outputFilePrefix, bool removeSparseSequences,
+std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string &outPutDirectory,
+                                               const std::string &outputFilePrefix, bool removeSparseSequences,
                                                double sparsity_value, bool createTemporalBuckets, bool durationInWeeks,
-                                               bool durationInMonths, bool removeSparseTemporalBuckets, int patIdLength,
-                                               int numOfThreads);
+                                               bool durationInMonths, bool durationSparsity,
+                                               double durationSparsityValue, bool removeSparseTemporalBuckets,
+                                               unsigned int patIdLength, unsigned int numOfThreads);
 
 
 
 std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
                                                            int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
                                                            const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
-                                                           bool createTemporalBuckets, bool durationInWeeks, bool durationInMonths,
-                                                           bool removeSparseTemporalBuckets, int patIdLength, int numOfThreads);
+                                                           bool createTemporalBuckets, bool durationInWeeks, bool durationInMonths, bool durationSparsity,
+                                                           double durationSparsityValue, bool removeSparseTemporalBuckets, unsigned int patIdLength, unsigned int numOfThreads);
 #endif //TSPM_CPP_BACKEND_WORKFLOWS_H
