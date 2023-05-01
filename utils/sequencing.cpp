@@ -8,32 +8,23 @@
 #include <string>
 
 
-std::vector<temporalSequence> extractTemporalSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
-                                                       const size_t *startPositions,
-                                                       std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads,
-                                                       bool durationInWeeks, bool durationInMonths,
-                                                       size_t sparsityThreshold, bool removeSparseBuckets){
+std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
+                                                     const size_t *startPositions,
+                                                     std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads,
+                                                     bool durationInWeeks, bool durationInMonths,
+                                                     size_t sparsityThreshold, bool removeSparseBuckets){
 
     std::vector<temporalSequence> nonSparseSequences =
             extractNonSparseSequences(dbMart, numOfPatients, startPositions,
                                       nonSparseSequencesIDs,
                                       numOfThreads, durationInWeeks, durationInMonths);
-    std::vector<std::vector<temporalSequence>> globalSequences(omp_get_max_threads());
-    ips4o::parallel::sort(nonSparseSequences.begin(),nonSparseSequences.end(),timedSequencesSorter);
 
-    // split sequence vector in subvectors!
-    auto endPos = nonSparseSequences.begin();
-    for (size_t i = 0; i < omp_get_max_threads(); ++i){
-        endPos = nonSparseSequences.begin() + (nonSparseSequences.size() / omp_get_max_threads() * (i + 1));
-        auto it = endPos;
-        for (; it != nonSparseSequences.end() && it->seqID == nonSparseSequences.end()->seqID; ++it);
-        endPos = it;
-        globalSequences[i] = std::vector<temporalSequence>(nonSparseSequences.begin(), endPos);
-        nonSparseSequences.erase(nonSparseSequences.begin(),endPos);
-        nonSparseSequences.shrink_to_fit();
-    }
-    nonSparseSequences.clear();
-    nonSparseSequences.shrink_to_fit();
+
+    // split sequence vector in subvectors! //
+    std::vector<std::vector<temporalSequence>> globalSequences(numOfThreads);
+    globalSequences = splitSequenceVectorInChunkes(nonSparseSequences, numOfThreads);
+
+
     std::cout << "creating arrays for start indicies" << std::endl;
     std::vector<std::vector<size_t>> startIndices(omp_get_max_threads());
     for (size_t i = 0; i < omp_get_max_threads(); ++i){
@@ -45,7 +36,8 @@ std::vector<temporalSequence> extractTemporalSequences(std::vector<dbMartEntry> 
         unsigned long seq = globalSequences[i][0].seqID;
         for (int j = 0; j <globalSequences[i].size() ; ++j) {
             if(seq != globalSequences[i][j].seqID){
-                startIndices[i].emplace_back(j-1);
+                seq = globalSequences[i][j].seqID;
+                startIndices[i].emplace_back(j);
             }
         }
     }
@@ -183,6 +175,101 @@ size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfP
     return sumOfSequences;
 }
 
+
+
+std::vector<size_t>getStartPositionsFromSequenceVector(std::vector<temporalSequence> &sequence){
+    std::vector<size_t> startPositions;
+    unsigned int lastPatId = sequence[0].patientID;
+    for (int i = 1; i < sequence.size(); ++i) {
+        if(lastPatId!=sequence[i].patientID){
+            startPositions.emplace_back(i);
+            lastPatId = sequence[i].patientID;
+        }
+    }
+    return startPositions;
+}
+
+
+std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks){
+    ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter);
+    std::vector<std::vector<temporalSequence>> localSequences;
+    //    Split Sequences in sub vectors for paralle access
+    auto endPos = sequences.begin();
+    size_t numOfSequencesPerChunk = sequences.size() / chunks;
+    for (size_t i = 0; i < chunks; ++i){
+        endPos = sequences.begin() + numOfSequencesPerChunk;
+        auto it = endPos;
+        for (; it != sequences.end() && it->seqID == sequences.end()->seqID; ++it);
+        endPos = it;
+        localSequences.emplace_back(std::vector<temporalSequence>(sequences.begin(), endPos));
+        sequences.erase(sequences.begin(),endPos);
+        sequences.shrink_to_fit();
+    }
+    //for small dataset, we might have some sequences (< chunksize) left at the end
+    localSequences[chunks - 1].insert(localSequences[chunks - 1].end(),sequences.begin(),sequences.end());
+    sequences.clear();
+    sequences.shrink_to_fit();
+    return localSequences;
+}
+
+
+
+std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequence> &sequences, bool durationSparsity,
+                                                      double sparsity, size_t numOfPatients, int numOfThreads,
+                                                      double durationPeriods, unsigned int daysForCoOoccurence, unsigned int bitShift){
+    std::vector<std::vector<temporalSequence>> localSequences = splitSequenceVectorInChunkes(sequences, numOfThreads);
+    size_t sparsityThreshold = numOfPatients * sparsity;
+
+#pragma omp parallel for default (none) shared(numOfThreads, localSequences, bitShift, sparsityThreshold, durationSparsity, durationPeriods, daysForCoOoccurence)
+    for(size_t i = 0; i < numOfThreads; ++i) {
+        if(localSequences[i].empty())
+            continue;
+        auto sparsityIt = localSequences[i].begin();
+        std::set<unsigned int> sequenceInPatient;
+        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift & sparsityIt->seqID;;
+        size_t count = 0;
+        // since the sequences are order by ID as first and duration as second iterator, we can iterate over them and
+        // integrate the duration in month and directly remove check for sparsity if the updated sequenceID change
+        while (sparsityIt != localSequences[i].end()) {
+            sparsityIt->seqID = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
+            if (sparsityIt->seqID == lastSequence) {
+                sequenceInPatient.insert(sparsityIt->patientID);
+                ++count;
+                ++sparsityIt;
+            } else {
+                lastSequence = sparsityIt->seqID;
+                if (durationSparsity && sequenceInPatient.size() < sparsityThreshold) {
+                    sparsityIt = localSequences[i].erase(sparsityIt - count, sparsityIt);
+                } else {
+                    ++sparsityIt;
+                }
+                sequenceInPatient.clear();
+                count = 0;
+            }
+        }
+    }
+    std::vector<temporalSequence> mergedSequences;
+    for(std::vector<temporalSequence> sequences : localSequences){
+        mergedSequences.insert(mergedSequences.end(),sequences.begin(), sequences.end());
+        sequences.clear();
+        sequences.shrink_to_fit();
+    }
+    return mergedSequences;
+}
+
+unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, int daysForCoOoccurence) {
+    //if the duration is less than 2 weeks it is considered as co-occurrence and therefore the distance is 0
+    if (daysForCoOoccurence <= 0)
+        daysForCoOoccurence = 1;
+    if(duration <  daysForCoOoccurence){
+        return 0;
+    }
+    if(durationPeriods == DURATION_IN_DAYS)
+        return duration;
+    else
+        return std::ceil(duration/durationPeriods);
+}
+
 std::vector<temporalSequence>
 extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
                           std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads, bool durationInWeeks,
@@ -190,7 +277,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
     size_t numberOfDbMartEntries = dbMart.size();
     std::vector<temporalSequence> localSequences[numOfThreads];
     omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationInMonths, durationInWeeks)
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationInMonths, durationInWeeks, daysPerWeek, daysPerMonth)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
@@ -201,9 +288,9 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
                 if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
                     unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
                     if(durationInWeeks && ! durationInMonths){
-                        duration  = duration / 7;
+                        duration  = duration / daysPerWeek;
                     }else if(durationInMonths && !durationInWeeks){
-                        duration = duration / 30.437;
+                        duration = duration / daysPerMonth;
                     }
                     temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) i)};
                     localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);

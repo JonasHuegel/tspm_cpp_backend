@@ -4,22 +4,18 @@
 #include "workflows.h"
 
 
-std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string& outPutDirectory,
-                                               const std::string& outputFilePrefix, bool removeSparseSequences,
+std::filesystem::path createOutputFilePath(const std::string &basicString);
+
+std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string &outPutDirectory,
+                                               const std::string &outputFilePrefix, bool removeSparseSequences,
                                                double sparsity_value, bool createTemporalBuckets, bool durationInWeeks,
-                                               bool durationInMonths, bool removeSparseTemporalBuckets, int patIdLength,
-                                               int numOfThreads){
+                                               bool durationInMonths, bool durationSparsity,
+                                               double durationSparsityValue, bool removeSparseTemporalBuckets,
+                                               unsigned int patIdLength, unsigned int numOfThreads) {
     std::vector<size_t> startPositions = extractStartPositions(dbMart);
     size_t numOfPatients = startPositions.size();
+    std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
 
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
-    std::string stringPath = outPutDirectory;
-    stringPath.append(oss.str()).append("/");
-    std::filesystem::path outputPath = std::filesystem::u8path(stringPath);
-    std::filesystem::create_directory(outputPath);
 
     //===== extract sequence
     std::cout << "extracting transitive sequences" << std::endl;
@@ -45,30 +41,38 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
 
     std::vector<temporalSequence> sequences;
     if(!createTemporalBuckets){
-        std::cout << "extracting sequences" << std::endl;
-        sequences = extractNonSparseSequences(dbMart, numOfPatients,startPositions.data(), sequenceCount, numOfThreads, durationInWeeks, durationInMonths);
+        if(durationSparsity){
+            std::cout << "extracting sequences with non sparse duration" <<std::endl;
+            std::vector<temporalSequence> nonSparseSequences;
+            nonSparseSequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(),
+                                                        sequenceCount, numOfThreads, false, false);
+
+            sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
+                                                durationSparsityValue,numOfPatients,numOfThreads);
+
+        }else {
+            std::cout << "extracting sparse sequences" << std::endl;
+            sequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(), sequenceCount,
+                                                  numOfThreads, durationInWeeks, durationInMonths);
+        }
+
 
     }else {
-        std::cout << "creating temporal sequences" << std::endl;
+        std::cout << "creating sequences with temporal buckets" << std::endl;
 
-        sequences = extractTemporalSequences(dbMart, numOfPatients, startPositions.data(), sequenceCount, numOfThreads,
-                                             durationInWeeks, durationInMonths, sparsity_value,
-                                             removeSparseTemporalBuckets);
+        sequences = extractTemporalBuckets(dbMart, numOfPatients, startPositions.data(), sequenceCount, numOfThreads,
+                                           durationInWeeks, durationInMonths, sparsity_value,
+                                           removeSparseTemporalBuckets);
     }
     return sequences;
 
 }
 
-
-
-
-
-
 std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
-                     int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
-                     const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
-                     bool createTemporalBuckets, bool durationInWeeks, bool durationInMonths,
-                     bool removeSparseTemporalBuckets, int patIdLength, int numOfThreads){
+                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
+                                                           const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
+                                                           bool createTemporalBuckets, bool durationInWeeks, bool durationInMonths, bool durationSparsity,
+                                                           double durationSparsityValue, bool removeSparseTemporalBuckets, unsigned int patIdLength, unsigned int numOfThreads){
     std::vector<dbMartEntry> dbMart;
     for(int i = 0; i < inputFilePaths.size();++i) {
         FILE *csvFilePointer = fopen(inputFilePaths[i].c_str(), "r");
@@ -80,9 +84,9 @@ std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std
         dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());
     }
 
-    return  sequenceWorkflow(dbMart, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
-                             createTemporalBuckets, durationInWeeks, durationInMonths, removeSparseTemporalBuckets,
-                             patIdLength, numOfThreads);
+    return sequenceWorkflow(dbMart, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
+                            createTemporalBuckets, durationInWeeks, durationInMonths, durationSparsity, durationSparsityValue,
+                            removeSparseTemporalBuckets, patIdLength, numOfThreads);
 
 
 }
