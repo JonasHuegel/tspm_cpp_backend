@@ -46,4 +46,26 @@ long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimi
 
 std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
 
+std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences);
+
+unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
+
+bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest);
+
+unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
+
+//we assume that the duraion is not stored in the sequence id, but instead in the duration field of the struct
+unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
+
+std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+                                                          unsigned int bitShift, unsigned int lengthOfPhenx,
+                                                          std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
+
+std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+                                                                unsigned int bitShift, unsigned int lengthOfPhenx,
+                                                                std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
+std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
+                             unsigned int bitShift, unsigned int lengthOfPhenx, std::vector<unsigned int> lowerBucketLimits,
+                             std::set<unsigned  int> &allEndPhenx, int &numOfThreads);
+
 #endif //TSPM_UTILS_H

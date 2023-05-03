@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "sorter.h"
 
 
 std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
@@ -249,3 +250,158 @@ std::filesystem::path createOutputFilePath(const std::string &outPutDirectory) {
     std::filesystem::create_directories(outputPath);
     return outputPath;
 }
+
+
+/**
+ * Function to identify possible candidate phenx from the sequences that might be of interest given a list of specific phenx
+ * @param originalSequences the original sequences, the duration should not be stored in the identifier
+ * @param minDuration the minimal duration that at least one sequence of each unique sequence starting with a phenx of interestshould have
+ * @param bitShift
+ * @param lengthOfPhenx the length defined for each phenx when combining then into a sequence
+ * @param phenxOfInterest an array, containing all starting phenx ids
+ * @param numOfThreads the number of threads for paralleisation
+ */
+std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+                                                          unsigned int bitShift, unsigned int lengthOfPhenx,
+                                                          std::vector<unsigned int> &phenxOfInterest, int &numOfThreads){
+    std::set<unsigned int> candidatePhenxs[numOfThreads];
+
+    ips4o::parallel::sort(originalSequences.begin(),originalSequences.end(),
+                          timedSequencesSorter, numOfThreads);
+    std::vector<size_t>startPositions = getSequenceStartPositions(originalSequences);
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(startPositions,originalSequences,candidatePhenxs, minDuration, lengthOfPhenx, phenxOfInterest )
+    for (size_t i = 0; i < startPositions.size(); ++i) {
+        size_t startPos = startPositions [i];
+        size_t endPos;
+        if(i < startPositions.size() - 1){
+            endPos = startPositions[i-1];
+        }else{
+            endPos = originalSequences.size();
+        }
+
+        if(isPhenxOfInterest(getStartPhenx(originalSequences[startPos],lengthOfPhenx), phenxOfInterest)){
+            unsigned int mininmalDuration = 0;
+            unsigned int endPhenx = getEndPhenx(originalSequences[startPos],lengthOfPhenx);
+            for(size_t j = startPos; j < endPos; ++j ){
+                temporalSequence seq = originalSequences[j];
+                mininmalDuration = std::min(mininmalDuration,  seq.duration);
+            }
+            if(mininmalDuration >= minDuration){
+                candidatePhenxs[omp_get_thread_num()].insert(endPhenx);
+            }
+        }
+    }
+    std::set<unsigned int> candidatePhenx;
+    for (int i = 0; i < numOfThreads; ++i) {
+        candidatePhenx.insert(candidatePhenxs[i].begin(), candidatePhenxs[i].end());
+        candidatePhenxs[i].clear();
+    }
+    return candidatePhenx;
+}
+
+unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx) {
+    std::string sequenceString = std::to_string(sequence.seqID);
+    return  std::stoul(sequenceString.substr(lengthOfPhenx, sequenceString.length()));
+}
+
+bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest) {
+    return std::find(phenxsOfInterest.begin(), phenxsOfInterest.end(),phenx) != phenxsOfInterest.end();
+}
+
+unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx){
+    //remove possible values stored sequenceID
+    std::string sequenceString = std::to_string(sequence.seqID);
+    return  std::stoul(sequenceString.substr(0,lengthOfPhenx - sequenceString.length()));
+}
+
+std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences) {
+    std::vector<size_t> startPositions;
+    startPositions.emplace_back(0);
+    for (int i = 1; i < sequences.size(); ++i) {
+        if(sequences[i-1].seqID != sequences[i].seqID){
+            startPositions.emplace_back(i);
+        }
+    }
+    return startPositions;
+}
+
+
+std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+                                                                unsigned int bitShift, unsigned int lengthOfPhenx,
+                                                                std::vector<unsigned int> &phenxOfInterest, int &numOfThreads){
+    std::vector<temporalSequence> candidateSequences[numOfThreads];
+
+    ips4o::parallel::sort(originalSequences.begin(),originalSequences.end(),
+                          timedSequencesSorter, numOfThreads);
+    std::vector<size_t>startPositions = getSequenceStartPositions(originalSequences);
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(startPositions,originalSequences,candidateSequences, minDuration, lengthOfPhenx, phenxOfInterest )
+    for (size_t i = 0; i < startPositions.size(); ++i) {
+        size_t startPos = startPositions [i];
+        size_t endPos;
+        if(i < startPositions.size() - 1){
+            endPos = startPositions[i-1];
+        }else{
+            endPos = originalSequences.size();
+        }
+
+        if(isPhenxOfInterest(getStartPhenx(originalSequences[startPos],lengthOfPhenx), phenxOfInterest)){
+            unsigned int mininmalDuration = 0;
+            for(size_t j = startPos; j < endPos; ++j ){
+                temporalSequence seq = originalSequences[j];
+                mininmalDuration = std::min(mininmalDuration,  seq.duration);
+            }
+            if (mininmalDuration >= minDuration) {
+                candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),originalSequences.begin()+startPos, originalSequences.begin()+endPos);
+            }
+        }
+    }
+
+    std::vector<temporalSequence>  mergedSequenceArrays;
+    for (int i = 0; i < numOfThreads; ++i) {
+        mergedSequenceArrays.insert(mergedSequenceArrays.end(),candidateSequences[i].begin(), candidateSequences[i].end());
+        candidateSequences[i].clear();
+    }
+    return mergedSequenceArrays;
+}
+
+std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
+                             unsigned int bitShift, unsigned int lengthOfPhenx, std::vector<unsigned int> lowerBucketLimits,
+                             std::set<unsigned  int> &allEndPhenx, int &numOfThreads){
+    std::vector<std::vector<temporalSequence>> candidateSequences;
+    std::vector<size_t> startPositions = getSequenceStartPositions(originalSequences);
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared (startPositions, originalSequences, lengthOfPhenx, allEndPhenx, candidateSequences, lowerBucketLimits)
+    for(size_t i = 0; i < startPositions.size(); i++){
+        size_t startPos = startPositions[i];
+        unsigned int endPhenx = getEndPhenx(originalSequences[startPos], lengthOfPhenx);
+        if(allEndPhenx.find(endPhenx) != allEndPhenx.end()){
+            size_t endPos;
+            if(i < startPositions.size() - 1){
+                endPos = startPositions[i+1];
+            }else{
+                endPos = startPositions.size();
+            }
+            for(size_t j = startPos; j < endPos; ++j) {
+                candidateSequences[omp_get_thread_num()].emplace_back(originalSequences[j]);
+            }
+        }
+    }
+    std::vector<temporalSequence> allCandidateSequences;
+    for(std::vector<temporalSequence> sequences : candidateSequences){
+        allCandidateSequences.insert(sequences.end(),sequences.begin(), sequences.end());
+        sequences.clear();
+        sequences.shrink_to_fit();
+    }
+    return allCandidateSequences;
+}
+
+unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits) {
+    unsigned int i = 0;
+    while (i < lowerBucketLimits.size() && duration < lowerBucketLimits[i]){
+        ++i;
+    }
+    return i;
+}
+
