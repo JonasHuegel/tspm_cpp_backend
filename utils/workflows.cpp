@@ -46,7 +46,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
             std::vector<temporalSequence> nonSparseSequences;
             nonSparseSequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(),
                                                         sequenceCount, numOfThreads, false, false);
-
+            std::cout << "extracted all sequences, removing non sparse durations" <<std::endl;
             sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
                                                 durationSparsityValue,numOfPatients,numOfThreads);
 

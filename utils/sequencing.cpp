@@ -226,7 +226,7 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
             continue;
         auto sparsityIt = localSequences[i].begin();
         std::set<unsigned int> sequenceInPatient;
-        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift & sparsityIt->seqID;;
+        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;;
         size_t count = 0;
         // since the sequences are order by ID as first and duration as second iterator, we can iterate over them and
         // integrate the duration in month and directly remove check for sparsity if the updated sequenceID change
