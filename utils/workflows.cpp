@@ -25,7 +25,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
                                                               outputPath.string(),outputFilePrefix);
     if(removeSparseSequences) {
         //===== remove sparse sequences
-        std::cout << "removing sparse sequences" << std::endl;
+        std::cout << "determine sparse sequences" << std::endl;
         size_t sparsityThreshold = numOfPatients * sparsity_value;
         std::cout << "sparsity= " << sparsity_value << " sparsity threshold: " << sparsityThreshold << std::endl;
         for (auto it = sequenceCount.begin(); it != sequenceCount.end();) {
@@ -36,22 +36,22 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
             }
         }
         size_t numOfUniqueSequences = sequenceCount.size();
-        std::cout << "Number of unique sparse sequences: " << numOfUniqueSequences << std::endl;
+        std::cout << "Number of unique non-sparse sequences: " << numOfUniqueSequences << std::endl;
     }
 
     std::vector<temporalSequence> sequences;
     if(!createTemporalBuckets){
         if(durationSparsity){
-            std::cout << "extracting sequences with non sparse duration" <<std::endl;
+            std::cout << "extracting sequences with non-sparse duration" <<std::endl;
             std::vector<temporalSequence> nonSparseSequences;
             nonSparseSequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(),
                                                         sequenceCount, numOfThreads, false, false);
-            std::cout << "extracted all sequences, removing non sparse durations" <<std::endl;
+            std::cout << "extracted sequences, removing non sparse durations" <<std::endl;
             sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
                                                 durationSparsityValue,numOfPatients,numOfThreads);
 
         }else {
-            std::cout << "extracting sparse sequences" << std::endl;
+            std::cout << "extracting (non-sparse) sequences" << std::endl;
             sequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(), sequenceCount,
                                                   numOfThreads, durationInWeeks, durationInMonths);
         }

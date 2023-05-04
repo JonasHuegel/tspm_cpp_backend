@@ -27,7 +27,8 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
 unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, int daysForCoOoccurence);
 
 
-std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks);
+std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks, double durationPeriods = DURATION_IN_DAYS,
+                                                                        unsigned int daysForCoOoccurence = 0);
 std::vector<size_t> extractStartPositions(std::vector<dbMartEntry> &dbMart);
 
 size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char inputFileDelimiter,

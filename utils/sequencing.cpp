@@ -190,7 +190,9 @@ std::vector<size_t>getStartPositionsFromSequenceVector(std::vector<temporalSeque
 }
 
 
-std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks){
+std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences,
+                                                                        unsigned int chunks, double durationPeriods,
+                                                                        unsigned int daysForCoOoccurence){
     ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter);
     std::vector<std::vector<temporalSequence>> localSequences;
     //    Split Sequences in sub vectors for paralle access
@@ -208,7 +210,9 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
         }
 
         long lastSeq = endPos->seqID;
-        for (; endPos != sequences.end() && lastSeq == endPos->seqID; ++endPos);
+        long lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence);
+        for (; endPos != sequences.end() && lastSeq == endPos->seqID &&
+        getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence) == lastDur; ++endPos);
         localSequences.emplace_back(std::vector<temporalSequence>(sequences.begin(), endPos));
         sequences.erase(sequences.begin(),endPos);
         sequences.shrink_to_fit();
@@ -225,7 +229,10 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
 std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequence> &sequences, bool durationSparsity,
                                                       double sparsity, size_t numOfPatients, int numOfThreads,
                                                       double durationPeriods, unsigned int daysForCoOoccurence, unsigned int bitShift){
-    std::vector<std::vector<temporalSequence>> localSequences = splitSequenceVectorInChunkes(sequences, numOfThreads);
+    std::vector<std::vector<temporalSequence>> localSequences = splitSequenceVectorInChunkes(sequences, numOfThreads, durationPeriods, daysForCoOoccurence);
+    for(int i =0; i<localSequences.size(); ++i){
+        std::cout<< "Number of Sequences in this chunk: " << localSequences[i].size() <<std::endl;
+    }
     size_t sparsityThreshold = numOfPatients * sparsity;
 
 #pragma omp parallel for default (none) shared(numOfThreads, localSequences, bitShift, sparsityThreshold, durationSparsity, durationPeriods, daysForCoOoccurence)
