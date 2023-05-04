@@ -197,7 +197,12 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
     auto endPos = sequences.begin();
     size_t numOfSequencesPerChunk = sequences.size() / chunks;
     for (size_t i = 0; i < chunks; ++i){
-        endPos = sequences.begin() + numOfSequencesPerChunk;
+        if(numOfSequencesPerChunk >= sequences.size()){
+            endPos =sequences.begin() + sequences.size() - 1;
+        }else{
+            endPos = sequences.begin() + numOfSequencesPerChunk;
+        }
+
         long lastSeq = endPos->seqID;
         for (; endPos != sequences.end() && lastSeq == endPos->seqID; ++endPos);
         localSequences.emplace_back(std::vector<temporalSequence>(sequences.begin(), endPos));
