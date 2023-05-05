@@ -18,7 +18,7 @@ bool timedSequencesSorter(temporalSequence const& first, temporalSequence const&
         return false;
     if (first.duration < second.duration)
         return true;
-    if (first.duration < second.duration)
+    if (first.duration > second.duration)
         return false;
     if (first.patientID < second.patientID)
         return true;
@@ -40,7 +40,7 @@ bool timedSequenceByPatientIDSorter(temporalSequence const& first, temporalSeque
         return false;
     if (first.duration < second.duration)
         return true;
-    if (first.duration < second.duration)
+    if (first.duration > second.duration)
         return false;
     return false;
 
@@ -48,13 +48,13 @@ bool timedSequenceByPatientIDSorter(temporalSequence const& first, temporalSeque
 
 
 bool dbMartSorter(const dbMartEntry first, const dbMartEntry second) {
-    if(first.patID< second.patID)
+    if(first.patID < second.patID)
         return true;
     if(first.patID > second.patID)
         return false;
     if (first.date < second.date)
         return true;
-    if (first.date < second.date)
+    if (first.date > second.date)
         return false;
     if (first.phenID < second.phenID)
         return true;

@@ -15,9 +15,7 @@
 #include <set>
 #include <filesystem>
 
-std::vector<dbMartEntry>
-extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn = 0, int phenotypeIDColumn = 1,
-               int dateColumn = 3);
+size_t writeSequencesToFile(std::string patientFilename, std::vector<long> sequences);
 
 std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
@@ -28,9 +26,6 @@ size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long>
 long addDurationToSequence(long &back, long startDate, long endDate);
 
 std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDuration, const std::string& outputDir, const std::string& file_prefix);
-
-std::pair<size_t, size_t>
-determinePatientStartPositionsInFile(const std::basic_string<char> &filename, char delimiter, std::vector<size_t> *startPositions);
 
 long getFileSize(const std::string& filename);
 

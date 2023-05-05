@@ -194,21 +194,20 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
     //    Split Sequences in sub vectors for parallel access
     auto endPos = sequences.begin();
     size_t numOfSequencesPerChunk = sequences.size() / chunks;
-    for (size_t i = 0; i < chunks; ++i){
-        if (sequences.empty()){
+    for (size_t i = 0; i < chunks; ++i) {
+        if (sequences.empty()) {
             localSequences.emplace_back();
             continue;
         }
-        if(numOfSequencesPerChunk >= sequences.size()){
-            endPos =sequences.begin() + (sequences.size() - 1);
-        }else{
+        if (numOfSequencesPerChunk >= sequences.size()) {
+            endPos = sequences.end();
+        } else {
             endPos = sequences.begin() + numOfSequencesPerChunk;
+            long lastSeq = endPos->seqID;
+            long lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence);
+            for (; endPos != sequences.end() && lastSeq == endPos->seqID &&
+                   getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence) == lastDur; ++endPos);
         }
-
-        long lastSeq = endPos->seqID;
-        long lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence);
-        for (; endPos != sequences.end() && lastSeq == endPos->seqID &&
-        getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence) == lastDur; ++endPos);
         localSequences.emplace_back(std::vector<temporalSequence>(sequences.begin(), endPos));
         sequences.erase(sequences.begin(),endPos);
         sequences.shrink_to_fit();
@@ -230,7 +229,9 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
             continue;
         auto sparsityIt = localSequences[i].begin();
         std::set<unsigned int> sequenceInPatient;
-        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;;
+        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
+        sparsityIt->seqID = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
+        ++sparsityIt;
         size_t count = 0;
         // since the sequences are order by ID as first and duration as second iterator, we can iterate over them and
         // integrate the duration in month and directly remove check for sparsity if the updated sequenceID change
@@ -243,7 +244,7 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
             } else {
                 lastSequence = sparsityIt->seqID;
                 if (durationSparsity && sequenceInPatient.size() < sparsityThreshold) {
-                    for(auto it = sparsityIt - count; it != sparsityIt; ++it){
+                    for(auto it = sparsityIt - (count+1); it != sparsityIt; ++it){
                         //
                         it->patientID=UINT32_MAX;
                     }
@@ -257,9 +258,12 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
     std::vector<temporalSequence> mergedSequences;
     for(std::vector<temporalSequence> seqs : localSequences){
         ips4o::parallel::sort(seqs.begin(), seqs.end(), timedSequenceByPatientIDSorter, numOfThreads);
-        auto it = seqs.begin();
-        for(; it != seqs.end() && it->patientID < UINT32_MAX; ++it );
-        mergedSequences.insert(mergedSequences.end(), seqs.begin(), it);
+        size_t i;
+        for (i = 0; i < seqs.size() && seqs[i].patientID < UINT32_MAX; ++i);
+        mergedSequences.insert(mergedSequences.end(),seqs.begin(), seqs.begin()+i);
+//        auto it = seqs.begin();
+//        for(; it != seqs.end() && it->patientID < UINT32_MAX; ++it );
+//        mergedSequences.insert(mergedSequences.end(), seqs.begin(), it);
         seqs.clear();
         seqs.shrink_to_fit();
     }

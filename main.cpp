@@ -2,8 +2,6 @@
 #include "utils/workflows.h"
 
 
-#pragma clang diagnostic get push
-#pragma ide diagnostic ignored "openmp-use-default-none"
 
 
 int main(int argc, char *argv[]) {
@@ -12,11 +10,7 @@ int main(int argc, char *argv[]) {
 //    std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_debug.csv";
     std::string description = "tspm_test_";
     std::string outputDir = "/home/jonas/CLionProjects/tspm_cpp_backend/out/data/";
-    int patIdColumn = 0;
-    int phenotypeIdColumn = 1;
-    int dateColumn = 3;
-    int patientCount = 1168; //TODO add function to determine (extract from last line in file)
-    bool createDuration = true;
+
     bool removeSparseBuckets = true;
     double sparsity = 0.05;
     bool removeSparseSequences = true;
@@ -84,7 +78,7 @@ int main(int argc, char *argv[]) {
 //            ++it;
 //        }
 //    }
-//    std::vector<temporalSequence> sparseSequences = extractNonSparseSequences(dbMart, 3, startPositions,
+//    std::vector<temporalSequence> nonSparseSequences = extractNonSparseSequences(dbMart, 3, startPositions,
 //                                                                              sequences, 16, false, false);
     return 0;
 

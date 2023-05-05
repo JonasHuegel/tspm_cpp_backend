@@ -11,7 +11,8 @@ std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, i
     std::vector<dbMartEntry> dbMartEntries;
     char line[2048];
     size_t len = 2048;
-    while(fgets(line, len, csv_file) != NULL){
+    fgets(line, len, csv_file);
+    while(fgets(line, len, csv_file) != nullptr){
         lines = getTokensFromLine(std::string(line), delim);
         dbMartEntry entry;
         entry.patID = atoi(lines[patIdColumn].c_str());
@@ -38,7 +39,18 @@ size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long>
     return written;
 }
 
+size_t writeSequencesToFile(std::string patientFilename, std::vector<long> sequences){
+    FILE* patientFile;
+    patientFile = fopen(patientFilename.append("asChar").c_str(), "w");
 
+    size_t written;
+    for(long seq : sequences){
+        std::string s = std::to_string(seq).append("\n");
+        written += std::fwrite(s.c_str(), 1,  s.size(), patientFile);
+    }
+    fclose(patientFile);
+    return written;
+}
 
 long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght){
     std::string phenA = std::to_string(phenotypeA);
@@ -56,78 +68,6 @@ long getTimeFromString(const char * date_string) {
     std::time_t  time_stamp = std::mktime(&time);
     return time_stamp;
 }
-
-
-std::vector<dbMartEntry>
-extractPatient(FILE *csv_file, std::vector<size_t> *startPositions, int patId, int patIdColumn, int phenotypeIDColumn,
-               int dateColumn) {
-    if (csv_file == nullptr) {
-        exit(EXIT_FAILURE);
-    }
-    std::vector<std::string> lines;
-    std::vector<dbMartEntry> dbMartEntries;
-    char line[2048];
-    size_t len = 2048;
-    for(size_t i = (*startPositions)[patId]; i < (*startPositions)[patId + 1]; ++i){
-        if(fgets(line, len, csv_file) == NULL){
-            return dbMartEntries;
-        }
-        lines = getTokensFromLine(std::string(line), ',');
-        dbMartEntry entry;
-        entry.patID = atoi(lines[patIdColumn].c_str());
-        entry.phenID = atoi(lines[phenotypeIDColumn].c_str());
-        entry.date = getTimeFromString(lines[dateColumn].c_str());
-        dbMartEntries.emplace_back(entry);
-
-    }
-    return  dbMartEntries;
-}
-
-std::pair<size_t, size_t>
-determinePatientStartPositionsInFile(const std::basic_string<char> &filename, char delimiter, std::vector<size_t> *startPositions) {
-    FILE *file = fopen(filename.c_str(), "r");
-    size_t line_count = 0; //Headerline was skipped
-    size_t pat_count = 0;
-    int patId = 0;
-    char nextPatId[20];
-    memset(nextPatId,0, sizeof (nextPatId));
-    bool detect_Patid = false;
-    std::vector<char> patIDAsString;
-    startPositions->emplace_back(1);
-    if(file != nullptr) {
-        while (!feof(file)) {
-            char nextchar = fgetc(file);
-            if (nextchar == '\n') {
-                ++line_count;
-                detect_Patid = true;
-            } else if (detect_Patid) {
-                if (nextchar != delimiter) {
-                    patIDAsString.emplace_back(nextchar);
-
-                } else {
-                    patIDAsString.emplace_back('\0');
-                    int nextPat = atoi(patIDAsString.data());
-                    if (patId != nextPat) {
-                        ++pat_count;
-                        startPositions->emplace_back(line_count);
-                        patId=nextPat;
-                    }
-                    detect_Patid = false;
-                    patIDAsString.clear();
-                }
-            }
-        }
-    } else{
-        std::cout << "could not open file: " << filename <<std::endl;
-        EXIT_FAILURE;
-    }
-    fclose(file);
-//    #TODO check if file closed
-startPositions->emplace_back(line_count); // add end
-    ++pat_count;//increase the patcount by one for the last patient (no increcement for this patient in the loop!)
-    return std::make_pair(line_count,pat_count);
-}
-
 
 unsigned int getDuration(long startDate, long endDate) {
     unsigned int secondsPerDay = 60 * 60 * 24;
@@ -175,7 +115,7 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
 
         std::set<long> patientSequenceSet;
         for (int j = 0; j < numberOfSequences; ++j) {
-            long sequence =0;
+            long sequence = 0;
             fread(&sequence, sizeof(long ),1,patientFile);
             if(storesDuration){
                 sequence = (sequence<<24)>>24;
