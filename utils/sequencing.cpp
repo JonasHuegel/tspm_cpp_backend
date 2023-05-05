@@ -1,10 +1,5 @@
-//
-// Created by jonas on 03.03.23.
-//
 
 #include "sequencing.h"
-#include <parallel/algorithm>
-#include "../lib/ips4o/ips4o.hpp"
 #include <string>
 
 
@@ -145,7 +140,8 @@ std::vector<size_t> extractStartPositions(std::vector<dbMartEntry> &dbMart) {
 size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t * startPositions,
                               const std::string& outPutDirectory,const std::string& outputFilePrefix, int patIDLength, int numOfThreads){
     omp_set_num_threads(numOfThreads);
-    size_t numOfSequences [numOfThreads]= { 0 };
+    auto numOfSequences= new size_t[numOfThreads];
+    std::fill_n(numOfSequences,numOfThreads,0);
     size_t numberOfDbMartEntries = dbMart.size();
     omp_set_num_threads(numOfThreads);
 #pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, patIDLength, outPutDirectory,outputFilePrefix, numOfSequences)
@@ -195,16 +191,16 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
                                                                         unsigned int daysForCoOoccurence){
     ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter);
     std::vector<std::vector<temporalSequence>> localSequences;
-    //    Split Sequences in sub vectors for paralle access
+    //    Split Sequences in sub vectors for parallel access
     auto endPos = sequences.begin();
     size_t numOfSequencesPerChunk = sequences.size() / chunks;
     for (size_t i = 0; i < chunks; ++i){
-        if (sequences.size() == 0){
-            localSequences.emplace_back(std::vector<temporalSequence>());
+        if (sequences.empty()){
+            localSequences.emplace_back();
             continue;
         }
         if(numOfSequencesPerChunk >= sequences.size()){
-            endPos =sequences.begin() + sequences.size() - 1;
+            endPos =sequences.begin() + (sequences.size() - 1);
         }else{
             endPos = sequences.begin() + numOfSequencesPerChunk;
         }
@@ -217,10 +213,6 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
         sequences.erase(sequences.begin(),endPos);
         sequences.shrink_to_fit();
     }
-    //for small dataset, we might have some sequences (< chunksize) left at the end
-    localSequences[chunks - 1].insert(localSequences[chunks - 1].end(),sequences.begin(),sequences.end());
-    sequences.clear();
-    sequences.shrink_to_fit();
     return localSequences;
 }
 
@@ -230,9 +222,6 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
                                                       double sparsity, size_t numOfPatients, int numOfThreads,
                                                       double durationPeriods, unsigned int daysForCoOoccurence, unsigned int bitShift){
     std::vector<std::vector<temporalSequence>> localSequences = splitSequenceVectorInChunkes(sequences, numOfThreads, durationPeriods, daysForCoOoccurence);
-    for(int i =0; i<localSequences.size(); ++i){
-        std::cout<< "Number of Sequences in this chunk: " << localSequences[i].size() <<std::endl;
-    }
     size_t sparsityThreshold = numOfPatients * sparsity;
 
 #pragma omp parallel for default (none) shared(numOfThreads, localSequences, bitShift, sparsityThreshold, durationSparsity, durationPeriods, daysForCoOoccurence)
@@ -254,25 +243,30 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
             } else {
                 lastSequence = sparsityIt->seqID;
                 if (durationSparsity && sequenceInPatient.size() < sparsityThreshold) {
-                    sparsityIt = localSequences[i].erase(sparsityIt - count, sparsityIt);
-                } else {
-                    ++sparsityIt;
+                    for(auto it = sparsityIt - count; it != sparsityIt; ++it){
+                        //
+                        it->patientID=UINT32_MAX;
+                    }
                 }
+                ++sparsityIt;
                 sequenceInPatient.clear();
                 count = 0;
             }
         }
     }
     std::vector<temporalSequence> mergedSequences;
-    for(std::vector<temporalSequence> sequences : localSequences){
-        mergedSequences.insert(mergedSequences.end(),sequences.begin(), sequences.end());
-        sequences.clear();
-        sequences.shrink_to_fit();
+    for(std::vector<temporalSequence> seqs : localSequences){
+        ips4o::parallel::sort(seqs.begin(), seqs.end(), timedSequenceByPatientIDSorter, numOfThreads);
+        auto it = seqs.begin();
+        for(; it != seqs.end() && it->patientID < UINT32_MAX; ++it );
+        mergedSequences.insert(mergedSequences.end(), seqs.begin(), it);
+        seqs.clear();
+        seqs.shrink_to_fit();
     }
     return mergedSequences;
 }
 
-unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, int daysForCoOoccurence) {
+unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOoccurence) {
     //if the duration is less than 2 weeks it is considered as co-occurrence and therefore the distance is 0
     if (daysForCoOoccurence <= 0)
         daysForCoOoccurence = 1;

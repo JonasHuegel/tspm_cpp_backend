@@ -24,7 +24,7 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
                                                       double durationPeriods = DURATION_IN_MONTHS,
                                                       unsigned int daysForCoOoccurence = 14,  unsigned int bitShift = 52);
 
-unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, int daysForCoOoccurence);
+unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOoccurence);
 
 
 std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks, double durationPeriods = DURATION_IN_DAYS,
