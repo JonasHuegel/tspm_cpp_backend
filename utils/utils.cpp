@@ -293,7 +293,9 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
                 mininmalDuration = std::min(mininmalDuration,  seq.duration);
             }
             if (mininmalDuration >= minDuration) {
-                candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),originalSequences.begin()+startPos, originalSequences.begin()+endPos);
+                candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),
+                                                                originalSequences.begin()+startPos,
+                                                                originalSequences.begin()+endPos);
             }
         }
     }
@@ -307,12 +309,12 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
 }
 
 std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
-                             unsigned int bitShift, unsigned int lengthOfPhenx, std::vector<unsigned int> lowerBucketLimits,
-                             std::set<unsigned  int> &allEndPhenx, int &numOfThreads){
+                             unsigned int bitShift, unsigned int lengthOfPhenx, std::set<unsigned  int> &allEndPhenx,
+                             int &numOfThreads){
     std::vector<std::vector<temporalSequence>> candidateSequences;
     std::vector<size_t> startPositions = getSequenceStartPositions(originalSequences);
     omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared (startPositions, originalSequences, lengthOfPhenx, allEndPhenx, candidateSequences, lowerBucketLimits)
+#pragma omp parallel for default (none) shared (startPositions, originalSequences, lengthOfPhenx, allEndPhenx, candidateSequences)
     for(size_t i = 0; i < startPositions.size(); i++){
         size_t startPos = startPositions[i];
         unsigned int endPhenx = getEndPhenx(originalSequences[startPos], lengthOfPhenx);

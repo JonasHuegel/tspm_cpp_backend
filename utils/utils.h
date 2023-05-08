@@ -60,7 +60,7 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
                                                                 unsigned int bitShift, unsigned int lengthOfPhenx,
                                                                 std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
 std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
-                             unsigned int bitShift, unsigned int lengthOfPhenx, std::vector<unsigned int> lowerBucketLimits,
-                             std::set<unsigned  int> &allEndPhenx, int &numOfThreads);
+                             unsigned int bitShift, unsigned int lengthOfPhenx, std::set<unsigned  int> &allEndPhenx,
+                             int &numOfThreads);
 
 #endif //TSPM_UTILS_H
