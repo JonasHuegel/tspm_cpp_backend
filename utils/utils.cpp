@@ -242,7 +242,7 @@ std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSe
 
 unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx) {
     std::string sequenceString = std::to_string(sequence.seqID);
-    return  std::stoul(sequenceString.substr(sequenceString.length() - lengthOfPhenx, sequenceString.length()));
+    return  std::stoul(sequenceString.substr(sequenceString.length() - lengthOfPhenx, lengthOfPhenx));
 }
 
 bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest) {
