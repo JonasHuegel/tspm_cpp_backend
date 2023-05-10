@@ -242,7 +242,7 @@ std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSe
 
 unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx) {
     std::string sequenceString = std::to_string(sequence.seqID);
-    return  std::stoul(sequenceString.substr(lengthOfPhenx, sequenceString.length()));
+    return  std::stoul(sequenceString.substr(sequenceString.length() - lengthOfPhenx, sequenceString.length()));
 }
 
 bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest) {
@@ -252,7 +252,7 @@ bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInt
 unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx){
     //remove possible values stored sequenceID
     std::string sequenceString = std::to_string(sequence.seqID);
-    return  std::stoul(sequenceString.substr(0,lengthOfPhenx - sequenceString.length()));
+    return  std::stoul(sequenceString.substr(0,sequenceString.length() - lengthOfPhenx));
 }
 
 std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences) {
