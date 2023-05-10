@@ -215,7 +215,7 @@ std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSe
         size_t startPos = startPositions [i];
         size_t endPos;
         if(i < startPositions.size() - 1){
-            endPos = startPositions[i-1];
+            endPos = startPositions[i+1];
         }else{
             endPos = originalSequences.size();
         }
@@ -281,7 +281,7 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
         size_t startPos = startPositions [i];
         size_t endPos;
         if(i < startPositions.size() - 1){
-            endPos = startPositions[i-1];
+            endPos = startPositions[i+1];
         }else{
             endPos = originalSequences.size();
         }
