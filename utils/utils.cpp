@@ -323,7 +323,7 @@ std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequen
             if(i < startPositions.size() - 1){
                 endPos = startPositions[i+1];
             }else{
-                endPos = startPositions.size();
+                endPos = originalSequences.size();
             }
             for(size_t j = startPos; j < endPos; ++j) {
                 candidateSequences[omp_get_thread_num()].emplace_back(originalSequences[j]);
