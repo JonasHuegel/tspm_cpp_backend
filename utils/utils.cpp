@@ -341,7 +341,7 @@ std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequen
 
 unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits) {
     unsigned int i = 0;
-    while (i < lowerBucketLimits.size() && duration < lowerBucketLimits[i]){
+    while (i < lowerBucketLimits.size() && duration > lowerBucketLimits[i]){
         ++i;
     }
     return i;
