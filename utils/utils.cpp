@@ -311,7 +311,7 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
 std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
                              unsigned int bitShift, unsigned int lengthOfPhenx, std::set<unsigned  int> &allEndPhenx,
                              int &numOfThreads){
-    std::vector<std::vector<temporalSequence>> candidateSequences;
+    std::vector<temporalSequence> candidateSequences[numOfThreads];
     std::vector<size_t> startPositions = getSequenceStartPositions(originalSequences);
     omp_set_num_threads(numOfThreads);
 #pragma omp parallel for default (none) shared (startPositions, originalSequences, lengthOfPhenx, allEndPhenx, candidateSequences)
