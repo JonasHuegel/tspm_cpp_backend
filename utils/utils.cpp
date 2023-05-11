@@ -315,7 +315,7 @@ std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequen
     std::vector<size_t> startPositions = getSequenceStartPositions(originalSequences);
     omp_set_num_threads(numOfThreads);
 #pragma omp parallel for default (none) shared (startPositions, originalSequences, lengthOfPhenx, allEndPhenx, candidateSequences)
-    for(size_t i = 0; i < startPositions.size(); i++){
+    for(size_t i = 0; i < startPositions.size(); ++i){
         size_t startPos = startPositions[i];
         unsigned int endPhenx = getEndPhenx(originalSequences[startPos], lengthOfPhenx);
         if(allEndPhenx.find(endPhenx) != allEndPhenx.end()){
@@ -332,7 +332,7 @@ std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequen
     }
     std::vector<temporalSequence> allCandidateSequences;
     for(std::vector<temporalSequence> sequences : candidateSequences){
-        allCandidateSequences.insert(sequences.end(),sequences.begin(), sequences.end());
+        allCandidateSequences.insert(allCandidateSequences.end(),sequences.begin(), sequences.end());
         sequences.clear();
         sequences.shrink_to_fit();
     }
