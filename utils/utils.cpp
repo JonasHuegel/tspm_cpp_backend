@@ -219,13 +219,13 @@ std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSe
         }else{
             endPos = originalSequences.size();
         }
-
-        if(isPhenxOfInterest(getStartPhenx(originalSequences[startPos],lengthOfPhenx), phenxOfInterest)){
+        unsigned int startPhenx = getStartPhenx(originalSequences[startPos],lengthOfPhenx);
+        if(isPhenxOfInterest( startPhenx, phenxOfInterest)){
             unsigned int mininmalDuration = 0;
             unsigned int endPhenx = getEndPhenx(originalSequences[startPos],lengthOfPhenx);
             for(size_t j = startPos; j < endPos; ++j ){
                 temporalSequence seq = originalSequences[j];
-                mininmalDuration = std::min(mininmalDuration,  seq.duration);
+                mininmalDuration = std::max(mininmalDuration,  seq.duration);
             }
             if(mininmalDuration >= minDuration){
                 candidatePhenxs[omp_get_thread_num()].insert(endPhenx);
@@ -290,7 +290,7 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
             unsigned int mininmalDuration = 0;
             for(size_t j = startPos; j < endPos; ++j ){
                 temporalSequence seq = originalSequences[j];
-                mininmalDuration = std::min(mininmalDuration,  seq.duration);
+                mininmalDuration = std::max(mininmalDuration,  seq.duration);
             }
             if (mininmalDuration >= minDuration) {
                 candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),
