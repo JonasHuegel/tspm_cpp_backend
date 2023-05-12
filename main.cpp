@@ -6,8 +6,8 @@
 
 int main(int argc, char *argv[]) {
     omp_set_num_threads(16);
-    std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_fourtimes_processed.csv";
-//    std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_debug.csv";
+//    std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_fourtimes_processed.csv";
+    std::string fileName = "/home/jonas/dbmart_num.test.csv";
     std::string description = "tspm_test_";
     std::string outputDir = "/home/jonas/CLionProjects/tspm_cpp_backend/out/data/";
 
@@ -15,10 +15,10 @@ int main(int argc, char *argv[]) {
     double sparsity = 0.05;
     bool removeSparseSequences = true;
     bool createTemporalBuckets = false;
-    bool durationInWeeks = false;
-    bool durationInMonths = false;
+    double durationPeriods = DURATION_IN_MONTHS;
+    unsigned int daysForCoOoccurence = 14;
     bool durationSparsity = true;
-    double durationSparsityValue = 0.005;
+    double durationSparsityValue = 0.05;
 
 
     std::vector<std::string> inputFilePaths;
@@ -30,8 +30,8 @@ int main(int argc, char *argv[]) {
     int dateColumns[1] = {2};
 //    std::vector<temporalSequence> seq = sequenceWorkflowFromCsVFiles( inputFilePaths, inputFileDelimiter, patIdColumns, phenxIDColumns,
 //                                  dateColumns,outputDir, description, removeSparseSequences,
-//                                  sparsity,createTemporalBuckets, durationInWeeks, durationInMonths,
-//                                  durationSparsity, durationSparsityValue, removeSparseBuckets,7,16);
+//                                  sparsity,createTemporalBuckets, durationPeriods, daysForCoOoccurence,
+//                                  durationSparsity, durationSparsityValue, removeSparseBuckets,7,1);
 //    std::cout<< "Number of sequences: " << seq.size() << std::endl;
 
     std::vector<dbMartEntry> dbMart;
@@ -51,21 +51,27 @@ int main(int argc, char *argv[]) {
             startPositions[dbMart[i].patID] = i;
         }
     }
-    sequenceWorkflow(dbMart,
+    durationSparsityValue = 0;
+    durationSparsity = false;
+    std::vector<temporalSequence> nonSparseSequences = sequenceWorkflow(dbMart,
                      outputDir,
                      description,
                      removeSparseSequences,
                      sparsity,
                      createTemporalBuckets,
-                     durationInWeeks,
-                     durationInMonths,
+                     durationPeriods,
+                     daysForCoOoccurence,
                      durationSparsity,
                      durationSparsityValue,
                      removeSparseBuckets,
                      7,
                      16);
 
-
+    std::vector<unsigned int> phenx;
+    phenx.emplace_back(3);
+    int t = 16;
+    auto  a = extractEndPhenxWithGivenStartPhenx(nonSparseSequences,3,0,7,phenx,t);
+    extractSequencesWithEnd(nonSparseSequences,0,7, a, t);
 //    std::cout << extractSequencesFromArray(dbMart, 3, startPositions,outputDir,description,7, 1);
 //    std::cout << std::endl;
 //    std::map<long, size_t> sequences = summarizeSequences(3, false, outputDir,description);

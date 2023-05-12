@@ -8,8 +8,8 @@ std::filesystem::path createOutputFilePath(const std::string &basicString);
 
 std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string &outPutDirectory,
                                                const std::string &outputFilePrefix, bool removeSparseSequences,
-                                               double sparsity_value, bool createTemporalBuckets, bool durationInWeeks,
-                                               bool durationInMonths, bool durationSparsity,
+                                               double sparsity_value, bool createTemporalBuckets, double durationPeriods,
+                                               unsigned int daysForCoOoccurence, bool durationSparsity,
                                                double durationSparsityValue, bool removeSparseTemporalBuckets,
                                                unsigned int patIdLength, unsigned int numOfThreads) {
     std::vector<size_t> startPositions = extractStartPositions(dbMart);
@@ -45,7 +45,8 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
             std::cout << "extracting sequences with non-sparse duration" <<std::endl;
             std::vector<temporalSequence> nonSparseSequences;
             nonSparseSequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(),
-                                                        sequenceCount, numOfThreads, false, false);
+                                                           sequenceCount, numOfThreads,
+                                                           DURATION_IN_MONTHS, 14);
             std::cout << "extracted non-sparse sequences: "<<nonSparseSequences.size()  << "! Removing sparse durations" <<std::endl;
             sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
                                                 durationSparsityValue,numOfPatients,numOfThreads);
@@ -53,7 +54,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
         }else {
             std::cout << "extracting (non-sparse) sequences" << std::endl;
             sequences = extractNonSparseSequences(dbMart, numOfPatients, startPositions.data(), sequenceCount,
-                                                  numOfThreads, durationInWeeks, durationInMonths);
+                                                  numOfThreads, DURATION_IN_MONTHS,14);
         }
 
 
@@ -61,7 +62,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
         std::cout << "creating sequences with temporal buckets" << std::endl;
 
         sequences = extractTemporalBuckets(dbMart, numOfPatients, startPositions.data(), sequenceCount, numOfThreads,
-                                           durationInWeeks, durationInMonths, sparsity_value,
+                                           durationPeriods, daysForCoOoccurence, sparsity_value,
                                            removeSparseTemporalBuckets);
     }
     return sequences;
@@ -71,7 +72,8 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
 std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
                                                            int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
                                                            const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
-                                                           bool createTemporalBuckets, bool durationInWeeks, bool durationInMonths, bool durationSparsity,
+                                                           bool createTemporalBuckets, double durationPeriods,
+                                                           unsigned int daysForCoOoccurence, bool durationSparsity,
                                                            double durationSparsityValue, bool removeSparseTemporalBuckets, unsigned int patIdLength, unsigned int numOfThreads){
     std::vector<dbMartEntry> dbMart;
     for(int i = 0; i < inputFilePaths.size();++i) {
@@ -85,7 +87,7 @@ std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std
     }
 
     return sequenceWorkflow(dbMart, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
-                            createTemporalBuckets, durationInWeeks, durationInMonths, durationSparsity, durationSparsityValue,
+                            createTemporalBuckets, durationPeriods, daysForCoOoccurence, durationSparsity, durationSparsityValue,
                             removeSparseTemporalBuckets, patIdLength, numOfThreads);
 
 

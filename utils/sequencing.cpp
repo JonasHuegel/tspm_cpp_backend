@@ -6,13 +6,13 @@
 std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
                                                      const size_t *startPositions,
                                                      std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads,
-                                                     bool durationInWeeks, bool durationInMonths,
+                                                     double durationPeriods, unsigned int daysForCoOoccurence,
                                                      size_t sparsityThreshold, bool removeSparseBuckets){
 
     std::vector<temporalSequence> nonSparseSequences =
             extractNonSparseSequences(dbMart, numOfPatients, startPositions,
                                       nonSparseSequencesIDs,
-                                      numOfThreads, durationInWeeks, durationInMonths);
+                                      numOfThreads, durationPeriods, daysForCoOoccurence);
 
 
     // split sequence vector in subvectors! //
@@ -285,12 +285,12 @@ unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, un
 
 std::vector<temporalSequence>
 extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
-                          std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads, bool durationInWeeks,
-                          bool durationInMonths) {
+                          std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod,
+                          int daysForCoOccurence) {
     size_t numberOfDbMartEntries = dbMart.size();
     std::vector<temporalSequence> localSequences[numOfThreads];
     omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationInMonths, durationInWeeks, daysPerWeek, daysPerMonth)
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationPeriod, daysForCoOccurence, daysPerWeek, daysPerMonth)
     for(size_t i = 0; i < numOfPatients; ++i){
         size_t startPos = startPositions[i];
         size_t endPos = i < numOfPatients-1 ? startPositions[i+1] : numberOfDbMartEntries;
@@ -300,11 +300,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
                 long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
                 if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
                     unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
-                    if(durationInWeeks && ! durationInMonths){
-                        duration  = duration / daysPerWeek;
-                    }else if(durationInMonths && !durationInWeeks){
-                        duration = duration / daysPerMonth;
-                    }
+                    duration = getDurationPeriod(duration,durationPeriod, daysForCoOccurence);
                     temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) i)};
                     localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);
                 }
