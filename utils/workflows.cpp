@@ -21,8 +21,8 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
     std::cout << "extracting transitive sequences" << std::endl;
     size_t numOfSequences  = extractSequencesFromArray(dbMart, numOfPatients,startPositions.data(), outputPath.string(), outputFilePrefix,patIdLength, numOfThreads);
     std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
-    std::map<long, size_t> sequenceCount = summarizeSequences(numOfPatients, false,
-                                                              outputPath.string(),outputFilePrefix);
+    std::map<std::int64_t, size_t> sequenceCount = summarizeSequencesFromFiles(
+            outputPath.string(), outputFilePrefix, numOfPatients, false, patIdLength);
     if(removeSparseSequences) {
         //===== remove sparse sequences
         std::cout << "determine sparse sequences" << std::endl;

@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     extractSequencesWithEnd(nonSparseSequences,0,7, a, t);
 //    std::cout << extractSequencesFromArray(dbMart, 3, startPositions,outputDir,description,7, 1);
 //    std::cout << std::endl;
-//    std::map<long, size_t> sequences = summarizeSequences(3, false, outputDir,description);
+//    std::map<std::uint64_t, size_t> sequences = summarizeSequencesFromFiles(3, false, outputDir,description);
 //    size_t sparsityThreshold = 3 * sparsity;
 //    std::cout << "sparsity= " << sparsity << " sparsity threshold: " << sparsityThreshold <<std::endl;
 //    for(auto it = sequences.begin(); it != sequences.end();){

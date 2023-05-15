@@ -5,7 +5,7 @@
 
 std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
                                                      const size_t *startPositions,
-                                                     std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads,
+                                                     std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
                                                      double durationPeriods, unsigned int daysForCoOoccurence,
                                                      size_t sparsityThreshold, bool removeSparseBuckets){
 
@@ -28,7 +28,7 @@ std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &d
             continue;
         }
         startIndices.emplace_back(0);
-        unsigned long seq = globalSequences[i][0].seqID;
+        std::uint64_t seq = globalSequences[i][0].seqID;
         for (int j = 0; j <globalSequences[i].size() ; ++j) {
             if(seq != globalSequences[i][j].seqID){
                 seq = globalSequences[i][j].seqID;
@@ -64,14 +64,14 @@ std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &d
 //      add bucket id to sequence id
             for (auto it =startIterator; it != endIterator; ++it) {
                 unsigned int bucket = getBucket(min, max, range / numberOfBuckets, it->duration);
-                int bitShift = sizeof(long) * 8 - 8;
+                int bitShift = sizeof(std::int64_t) * 8 - 8;
                 it->seqID = bucket << bitShift && it->seqID;
             }
 
             if (removeSparseBuckets) {
                 std::set<unsigned int> sequenceInPatient;
                 ips4o::parallel::sort(startIterator, endIterator,timedSequencesSorter);
-                unsigned long lastSequence = startIterator->seqID;
+                std::uint64_t lastSequence = startIterator->seqID;
                 size_t count = 0;
                 auto it = startIterator;
                 while (it != endIterator) {
@@ -151,7 +151,7 @@ size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfP
         size_t numOfPatientEntries = endPos - startPos;
 
         size_t numberOfSequences = (numOfPatientEntries * (numOfPatientEntries - 1)) / 2;
-        std::vector<long> sequences;
+        std::vector<std::int64_t> sequences;
         sequences.reserve(numberOfSequences);
         for(size_t j = startPos; j < endPos - 1; ++j){
             for (size_t k = j + 1; k < endPos ; ++k) {
@@ -203,8 +203,8 @@ std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vec
             endPos = sequences.end();
         } else {
             endPos = sequences.begin() + numOfSequencesPerChunk;
-            long lastSeq = endPos->seqID;
-            long lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence);
+            std::int64_t lastSeq = endPos->seqID;
+            std::int64_t lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence);
             for (; endPos != sequences.end() && lastSeq == endPos->seqID &&
                    getDurationPeriod(endPos->duration, durationPeriods, daysForCoOoccurence) == lastDur; ++endPos);
         }
@@ -229,7 +229,7 @@ std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequen
             continue;
         auto sparsityIt = localSequences[i].begin();
         std::set<unsigned int> sequenceInPatient;
-        unsigned long lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
+        std::uint64_t lastSequence = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
         sparsityIt->seqID = getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOoccurence)<< bitShift | sparsityIt->seqID;
         ++sparsityIt;
         size_t count = 0;
@@ -285,7 +285,7 @@ unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, un
 
 std::vector<temporalSequence>
 extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
-                          std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod,
+                          std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod,
                           int daysForCoOccurence) {
     size_t numberOfDbMartEntries = dbMart.size();
     std::vector<temporalSequence> localSequences[numOfThreads];
@@ -297,7 +297,7 @@ extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients
 
         for(size_t j = startPos; j < endPos - 1; ++j) {
             for (size_t k = j + 1; k < endPos; ++k) {
-                long sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
+                std::int64_t sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
                 if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
                     unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
                     duration = getDurationPeriod(duration,durationPeriod, daysForCoOccurence);

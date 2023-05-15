@@ -15,28 +15,30 @@
 #include <set>
 #include <filesystem>
 
-size_t writeSequencesToFile(std::string patientFilename, std::vector<long> sequences);
+size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> sequences);
 
 std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
-long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
+std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
 
-size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long> sequences);
+size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> sequences);
 
-long addDurationToSequence(long &back, long startDate, long endDate);
+std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, std::int64_t endDate);
 
-std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDuration, const std::string& outputDir, const std::string& file_prefix);
+std::map<std::int64_t, size_t>
+summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24);
 
-long getFileSize(const std::string& filename);
+std::int64_t getFileSize(const std::string& filename);
 
-unsigned int getDuration(long startDate, long endDate);
+unsigned int getDuration(std::int64_t startDate, std::int64_t endDate);
 
-long getTimeFromString(const char * date_string);
+std::int64_t getTimeFromString(const char * date_string);
 
 std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
                                               int dateColumn, char delim = ',');
 
-long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
+std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
                          temporalSequence * temporalSequences, bool debug =false);
 
 std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
@@ -52,11 +54,11 @@ unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx)
 //we assume that the duraion is not stored in the sequence id, but instead in the duration field of the struct
 unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
 
-std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                                           unsigned int bitShift, unsigned int lengthOfPhenx,
                                                           std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
 
-std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                                                 unsigned int bitShift, unsigned int lengthOfPhenx,
                                                                 std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
 std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,

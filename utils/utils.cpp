@@ -26,12 +26,12 @@ std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, i
 }
 
 
-size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long> sequences){
+size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> sequences){
     FILE* patientFile;
     patientFile = fopen(patientFilename.c_str(), "wb");
     size_t written;
     if(patientFile!= nullptr) {
-       written = std::fwrite(&sequences[0], 1, sequences.size() * sizeof(long), patientFile);
+       written = std::fwrite(&sequences[0], 1, sequences.size() * sizeof(std::int64_t), patientFile);
     }else{
         return 0;
     }
@@ -39,12 +39,12 @@ size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<long>
     return written;
 }
 
-size_t writeSequencesToFile(std::string patientFilename, std::vector<long> sequences){
+size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> sequences){
     FILE* patientFile;
     patientFile = fopen(patientFilename.append("asChar").c_str(), "w");
 
     size_t written;
-    for(long seq : sequences){
+    for(std::int64_t seq : sequences){
         std::string s = std::to_string(seq).append("\n");
         written += std::fwrite(s.c_str(), 1,  s.size(), patientFile);
     }
@@ -52,7 +52,7 @@ size_t writeSequencesToFile(std::string patientFilename, std::vector<long> seque
     return written;
 }
 
-long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght){
+std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght){
     std::string phenA = std::to_string(phenotypeA);
     std::string phenB = std::to_string(phenotypeB);
     phenB.insert(phenB.begin(),phenotypelenght-phenB.size(), '0');
@@ -60,7 +60,7 @@ long createSequence(int phenotypeA, int phenotypeB, int phenotypelenght){
     return atol(phenA.c_str());
 }
 
-long getTimeFromString(const char * date_string) {
+std::int64_t getTimeFromString(const char * date_string) {
     std::istringstream stringStream(date_string);
     std::tm time = {};
     stringStream >> std::get_time(&time,"%Y-%m-%dT%H:%M:%SZ");
@@ -69,7 +69,7 @@ long getTimeFromString(const char * date_string) {
     return time_stamp;
 }
 
-unsigned int getDuration(long startDate, long endDate) {
+unsigned int getDuration(std::int64_t startDate, std::int64_t endDate) {
     unsigned int secondsPerDay = 60 * 60 * 24;
     unsigned int duration = std::abs(endDate - startDate) / secondsPerDay;
     return duration;
@@ -88,7 +88,7 @@ std::vector<std::string> getTokensFromLine(const std::string &line, char delim) 
     return vectorizedLine;
 }
 
-long getFileSize(const std::string& filename){
+std::int64_t getFileSize(const std::string& filename){
     try {
         return std::filesystem::file_size(filename);
     } catch(std::filesystem::filesystem_error& e) {
@@ -97,28 +97,29 @@ long getFileSize(const std::string& filename){
     }
 }
 
-std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDuration, const std::string& outputDir, const std::string& file_prefix) {
+std::map<std::int64_t, size_t>
+summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift) {
 
-    std::map<long, size_t> globalSequenceMap;
+    std::map<std::int64_t, size_t> globalSequenceMap;
     const int numOfProcs = omp_get_max_threads();
-    std::map<long, size_t> localmaps[numOfProcs];
+    std::map<std::int64_t, size_t> localmaps[numOfProcs];
     std::vector<int> patientsPerThread(numOfProcs);
     std::mutex map_mutex;
-#pragma omp parallel for default (none) shared(numberOfPatients, file_prefix, outputDir,storesDuration,localmaps,patientsPerThread,map_mutex, globalSequenceMap, std::cout)
+#pragma omp parallel for default (none) shared(numberOfPatients, file_prefix, outputDir,storesDuration,localmaps,patientsPerThread,map_mutex, globalSequenceMap, patIdLength, bitShift)
     for (size_t i = 0; i < numberOfPatients; ++i) {
         std::string patIDString = std::to_string(i);
-        int patIDLength = 7;
-        patIDString.insert(patIDString.begin(), patIDLength - patIDString.size(), '0');
+        patIDString.insert(patIDString.begin(), patIdLength - patIDString.size(), '0');
         std::string patientFileName = std::string(outputDir).append(file_prefix).append(patIDString);
-        long numberOfSequences = getFileSize(patientFileName)/sizeof(long);
+        std::int64_t numberOfSequences = getFileSize(patientFileName)/sizeof(std::int64_t);
         FILE* patientFile = fopen(patientFileName.c_str(),"rb");
 
-        std::set<long> patientSequenceSet;
+        std::set<std::int64_t> patientSequenceSet;
         for (int j = 0; j < numberOfSequences; ++j) {
-            long sequence = 0;
-            fread(&sequence, sizeof(long ),1,patientFile);
+            std::int64_t sequence = 0;
+            fread(&sequence, sizeof(std::int64_t),1,patientFile);
             if(storesDuration){
-                sequence = (sequence<<24)>>24;
+                sequence = (sequence<<bitShift)>>bitShift;
             }
             if(patientSequenceSet.insert(sequence).second){
                 ++localmaps[omp_get_thread_num()][sequence];
@@ -130,29 +131,28 @@ std::map<long, size_t> summarizeSequences(int numberOfPatients, bool storesDurat
         ++patientsPerThread[omp_get_thread_num()];
         if(patientsPerThread[omp_get_thread_num()]>=50) {
             map_mutex.lock();
-            for (std::pair<long, size_t> entry: localmaps[omp_get_thread_num()]) {
+            for (std::pair<std::int64_t, size_t> entry: localmaps[omp_get_thread_num()]) {
                 globalSequenceMap[entry.first] += entry.second;
             }
             map_mutex.unlock();
-            localmaps[omp_get_thread_num()] = std::map<long, size_t>();
+            localmaps[omp_get_thread_num()].clear();
             patientsPerThread[omp_get_thread_num()] = 0;
         }
     }
 
     //merge all local maps into final map
     for (int i = 0; i < numOfProcs; ++i) {
-
-        for (std::pair<long, size_t> entry: localmaps[i]) {
+        for (std::pair<std::int64_t, size_t> entry: localmaps[i]) {
             globalSequenceMap[entry.first] += entry.second;
         }
     }
     return globalSequenceMap;
 }
 
-long writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences, bool debug){
+std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences, bool debug){
     FILE* sequenceFile;
     sequenceFile = fopen((filepath.append(fileName)).c_str(), "w");
-    long written = 0;
+    std::int64_t written = 0;
 
     if(sequenceFile == nullptr) {
         return -1;
@@ -201,7 +201,7 @@ std::filesystem::path createOutputFilePath(const std::string &outPutDirectory) {
  * @param phenxOfInterest an array, containing all starting phenx ids
  * @param numOfThreads the number of threads for paralleisation
  */
-std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                                           unsigned int bitShift, unsigned int lengthOfPhenx,
                                                           std::vector<unsigned int> &phenxOfInterest, int &numOfThreads){
     std::set<unsigned int> candidatePhenxs[numOfThreads];
@@ -267,7 +267,7 @@ std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &seq
 }
 
 
-std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, unsigned long minDuration,
+std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                                                 unsigned int bitShift, unsigned int lengthOfPhenx,
                                                                 std::vector<unsigned int> &phenxOfInterest, int &numOfThreads){
     std::vector<temporalSequence> candidateSequences[numOfThreads];

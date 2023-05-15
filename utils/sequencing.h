@@ -38,13 +38,13 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
 
 std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
                                                      const size_t *startPositions,
-                                                     std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads,
+                                                     std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
                                                      double durationPeriods, unsigned int daysForCoOoccurence,
                                                      size_t sparsityThreshold, bool removeSparseBuckets);
 
 std::vector<temporalSequence>
 extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
-                          std::map<long, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod = DURATION_IN_MONTHS,
+                          std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod = DURATION_IN_MONTHS,
                           int daysForCoOccurence = 14);
 
 size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t * startPositions,

@@ -5,10 +5,12 @@
 #ifndef TSPM_CPP_BACKEND_DBMARTENTRY_H
 #define TSPM_CPP_BACKEND_DBMARTENTRY_H
 
+#include <cstdint>
+
 struct dbMartEntry{
     int patID;
     int phenID;
-    long date;
+    std::int64_t date;
 
 };
 
