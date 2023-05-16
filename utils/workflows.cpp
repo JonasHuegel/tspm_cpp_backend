@@ -23,6 +23,13 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
     std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
     std::map<std::int64_t, size_t> sequenceCount = summarizeSequencesFromFiles(
             outputPath.string(), outputFilePrefix, numOfPatients, false, patIdLength);
+    std::cout << "Number of overall unique sequences: " << sequenceCount.size() <<std::endl;
+    size_t sum =0;
+    for(auto entry : sequenceCount){
+        sum += entry.second;
+    }
+    sequenceCount =summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
+    std::cout << "Number of overall unique sequences" <<sequenceCount.size() << std::endl;
     if(removeSparseSequences) {
         //===== remove sparse sequences
         std::cout << "determine sparse sequences" << std::endl;

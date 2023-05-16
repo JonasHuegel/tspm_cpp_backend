@@ -149,6 +149,48 @@ summarizeSequencesFromFiles(const std::string &outputDir, const std::string &fil
     return globalSequenceMap;
 }
 
+std::map<std::int64_t, size_t>
+summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
+                            unsigned int &numOfThreads, unsigned  int phenxIdLength) {
+    std::map<std::int64_t, size_t> globalSequenceMap;
+    std::map<std::int64_t, size_t> localmaps[numOfThreads];
+    size_t numOfPatients = startPositions.size();
+    omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(startPositions,dbMart,localmaps, globalSequenceMap, phenxIdLength, numOfPatients)
+    for (size_t i = 0; i < numOfPatients; ++i) {
+        size_t startPos = startPositions[i];
+        size_t endPos = i < numOfPatients - 1 ? startPositions[i+1] : dbMart.size();
+        std::set<std::int64_t> patientSequenceSet;
+        for(size_t j = startPos; j < endPos - 1; ++j){
+            for (size_t k = j + 1; k < endPos ; ++k) {
+                std::int64_t sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID, phenxIdLength);
+                if(patientSequenceSet.insert(sequence).second){
+                    if(auto it = localmaps[omp_get_thread_num()].find(sequence); it == localmaps[omp_get_thread_num()].end()){
+                        localmaps[omp_get_thread_num()].insert(std::make_pair(sequence,1));
+                    }else{
+                        it->second += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    for(int i = 0; i < numOfThreads; ++i){
+        if(localmaps[i].empty()){
+            continue;
+        }
+        for(auto mapEntry :localmaps[i]) {
+            if(auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()){
+                globalSequenceMap.insert(std::make_pair(mapEntry.first,1));
+            }else{
+                it->second += mapEntry.second;
+            }
+        }
+    }
+    return globalSequenceMap;
+}
+
+
 std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences, temporalSequence * temporalSequences, bool debug){
     FILE* sequenceFile;
     sequenceFile = fopen((filepath.append(fileName)).c_str(), "w");
