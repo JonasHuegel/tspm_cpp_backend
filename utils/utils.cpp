@@ -26,10 +26,10 @@ std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, i
 }
 
 
-size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> sequences){
+size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences){
     FILE* patientFile;
     patientFile = fopen(patientFilename.c_str(), "wb");
-    size_t written;
+    size_t written = 0;
     if(patientFile!= nullptr) {
        written = std::fwrite(&sequences[0], 1, sequences.size() * sizeof(std::int64_t), patientFile);
     }else{
@@ -39,7 +39,7 @@ size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::
     return written;
 }
 
-size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> sequences){
+size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences){
     FILE* patientFile;
     patientFile = fopen(patientFilename.append("asChar").c_str(), "w");
 
@@ -57,7 +57,7 @@ std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght)
     std::string phenB = std::to_string(phenotypeB);
     phenB.insert(phenB.begin(),phenotypelenght-phenB.size(), '0');
     phenA.append(phenB);
-    return atol(phenA.c_str());
+    return atoll(phenA.c_str());
 }
 
 std::int64_t getTimeFromString(const char * date_string) {
