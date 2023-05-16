@@ -6,7 +6,10 @@
 
 std::filesystem::path createOutputFilePath(const std::string &basicString);
 
-std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string &outPutDirectory,
+
+
+
+std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, bool storeSeqDuringCreation,  const std::string &outPutDirectory,
                                                const std::string &outputFilePrefix, bool removeSparseSequences,
                                                double sparsity_value, bool createTemporalBuckets, double durationPeriods,
                                                unsigned int daysForCoOoccurence, bool durationSparsity,
@@ -16,20 +19,26 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
     size_t numOfPatients = startPositions.size();
     std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
 
-
+    std::map<std::int64_t, size_t> sequenceCount;
     //===== extract sequence
-    std::cout << "extracting transitive sequences" << std::endl;
-    size_t numOfSequences  = extractSequencesFromArray(dbMart, numOfPatients,startPositions.data(), outputPath.string(), outputFilePrefix,patIdLength, numOfThreads);
-    std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
-    std::map<std::int64_t, size_t> sequenceCount = summarizeSequencesFromFiles(
-            outputPath.string(), outputFilePrefix, numOfPatients, false, patIdLength);
+    if(storeSeqDuringCreation) {
+        std::cout << "extracting transitive sequences" << std::endl;
+        size_t numOfSequences = extractSequencesFromArray(dbMart, numOfPatients, startPositions.data(),
+                                                          outputPath.string(), outputFilePrefix, patIdLength,
+                                                          numOfThreads);
+        std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
+        sequenceCount = summarizeSequencesFromFiles(outputPath.string(), outputFilePrefix,
+                                                    numOfPatients, false, patIdLength);
+    }else{
+        sequenceCount =summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
+    }
     std::cout << "Number of overall unique sequences: " << sequenceCount.size() <<std::endl;
     size_t sum =0;
     for(auto entry : sequenceCount){
         sum += entry.second;
     }
-    sequenceCount =summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
-    std::cout << "Number of overall unique sequences" <<sequenceCount.size() << std::endl;
+    std::cout << "Sum of overall unique sequences: " << sum << std::endl;
+
     if(removeSparseSequences) {
         //===== remove sparse sequences
         std::cout << "determine sparse sequences" << std::endl;
@@ -77,7 +86,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
 }
 
 std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
-                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
+                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], bool storeSeqDuringCreation, const std::string& outPutDirectory,
                                                            const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
                                                            bool createTemporalBuckets, double durationPeriods,
                                                            unsigned int daysForCoOoccurence, bool durationSparsity,
@@ -93,7 +102,7 @@ std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std
         dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());
     }
 
-    return sequenceWorkflow(dbMart, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
+    return sequenceWorkflow(dbMart, storeSeqDuringCreation, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
                             createTemporalBuckets, durationPeriods, daysForCoOoccurence, durationSparsity, durationSparsityValue,
                             removeSparseTemporalBuckets, patIdLength, numOfThreads);
 

@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     unsigned int daysForCoOoccurence = 14;
     bool durationSparsity = true;
     double durationSparsityValue = 0.05;
-
+    bool storeSeqDuringCreation = false;
 
     std::vector<std::string> inputFilePaths;
     inputFilePaths.push_back(fileName);
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     int phenxIDColumns[1] = {1};
     int dateColumns[1] = {2};
 //    std::vector<temporalSequence> seq = sequenceWorkflowFromCsVFiles( inputFilePaths, inputFileDelimiter, patIdColumns, phenxIDColumns,
-//                                  dateColumns,outputDir, description, removeSparseSequences,
+//                                  dateColumns, storeSeqDuringCreation, outputDir, description, removeSparseSequences,
 //                                  sparsity,createTemporalBuckets, durationPeriods, daysForCoOoccurence,
 //                                  durationSparsity, durationSparsityValue, removeSparseBuckets,7,1);
 //    std::cout<< "Number of sequences: " << seq.size() << std::endl;
@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
     durationSparsityValue = 0;
     durationSparsity = false;
     std::vector<temporalSequence> nonSparseSequences = sequenceWorkflow(dbMart,
+                     storeSeqDuringCreation,
                      outputDir,
                      description,
                      removeSparseSequences,

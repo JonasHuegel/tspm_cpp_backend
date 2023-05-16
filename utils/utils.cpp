@@ -181,7 +181,7 @@ summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_
         }
         for(auto mapEntry :localmaps[i]) {
             if(auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()){
-                globalSequenceMap.insert(std::make_pair(mapEntry.first,1));
+                globalSequenceMap.insert(std::make_pair(mapEntry.first,mapEntry.second));
             }else{
                 it->second += mapEntry.second;
             }

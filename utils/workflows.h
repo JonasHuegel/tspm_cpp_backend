@@ -7,7 +7,7 @@
 #include "sorter.h"
 #include <ctime>
 
-std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, const std::string &outPutDirectory,
+std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, bool storeSeqDuringCreation, const std::string &outPutDirectory,
                                                const std::string &outputFilePrefix, bool removeSparseSequences,
                                                double sparsity_value, bool createTemporalBuckets, double durationPeriods,
                                                unsigned int daysForCoOoccurence, bool durationSparsity,
@@ -17,7 +17,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
 
 
 std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
-                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], const std::string& outPutDirectory,
+                                                           int patIDColumns[], int phenxColumns[], int dateColumns[], bool storeSeqDuringCreation, const std::string& outPutDirectory,
                                                            const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
                                                            bool createTemporalBuckets, double durationPeriods,
                                                            unsigned int daysForCoOoccurence, bool durationSparsity,
