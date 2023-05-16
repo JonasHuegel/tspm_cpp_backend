@@ -15,7 +15,7 @@
 #include <set>
 #include <filesystem>
 
-size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> sequences);
+size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
 std::map<std::int64_t, size_t>
 summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
@@ -25,7 +25,7 @@ std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
 std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
 
-size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> sequences);
+size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
 std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, std::int64_t endDate);
 
