@@ -287,6 +287,11 @@ unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx)
     return  std::stoul(sequenceString.substr(sequenceString.length() - lengthOfPhenx, lengthOfPhenx));
 }
 
+unsigned int getEndPhenx(std::uint64_t sequence, unsigned int lengthOfPhenx) {
+    std::string sequenceString = std::to_string(sequence);
+    return  std::stoul(sequenceString.substr(sequenceString.length() - lengthOfPhenx, lengthOfPhenx));
+}
+
 bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest) {
     return std::find(phenxsOfInterest.begin(), phenxsOfInterest.end(),phenx) != phenxsOfInterest.end();
 }
@@ -294,6 +299,12 @@ bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInt
 unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx){
     //remove possible values stored sequenceID
     std::string sequenceString = std::to_string(sequence.seqID);
+    return  std::stoul(sequenceString.substr(0,sequenceString.length() - lengthOfPhenx));
+}
+
+unsigned int getStartPhenx(std::uint64_t sequence, unsigned int lengthOfPhenx){
+    //remove possible values stored sequenceID
+    std::string sequenceString = std::to_string(sequence);
     return  std::stoul(sequenceString.substr(0,sequenceString.length() - lengthOfPhenx));
 }
 

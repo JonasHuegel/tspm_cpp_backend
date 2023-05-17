@@ -50,10 +50,12 @@ std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
 std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences);
 
 unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
+unsigned int getStartPhenx(int64_t sequence, unsigned int lengthOfPhenx);
 
 bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest);
 
 unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
+unsigned int getEndPhenx(int64_t sequence, unsigned int lengthOfPhenx);
 
 //we assume that the duraion is not stored in the sequence id, but instead in the duration field of the struct
 unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
