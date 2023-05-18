@@ -17,11 +17,11 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
                                                unsigned int patIdLength, unsigned int numOfThreads) {
     std::vector<size_t> startPositions = extractStartPositions(dbMart);
     size_t numOfPatients = startPositions.size();
-    std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
 
     std::map<std::int64_t, size_t> sequenceCount;
     //===== extract sequence
     if(storeSeqDuringCreation) {
+        std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
         std::cout << "extracting transitive sequences" << std::endl;
         size_t numOfSequences = extractSequencesFromArray(dbMart, numOfPatients, startPositions.data(),
                                                           outputPath.string(), outputFilePrefix, patIdLength,
@@ -30,7 +30,7 @@ std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart,
         sequenceCount = summarizeSequencesFromFiles(outputPath.string(), outputFilePrefix,
                                                     numOfPatients, false, patIdLength);
     }else{
-        sequenceCount =summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
+        sequenceCount = summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
     }
     std::cout << "Number of overall unique sequences: " << sequenceCount.size() <<std::endl;
     size_t sum =0;
