@@ -95,7 +95,7 @@ std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std
     for(int i = 0; i < inputFilePaths.size();++i) {
         FILE *csvFilePointer = fopen(inputFilePaths[i].c_str(), "r");
         if (csvFilePointer == nullptr) {
-            exit(EXIT_FAILURE);
+            return {};
         }
         std::vector<dbMartEntry> localDBMart = extractDBMartFromCsv(csvFilePointer, patIDColumns[i], phenxColumns[i],
                                                                     dateColumns[i], inputFileDelimiter);
