@@ -115,7 +115,7 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
     for(int i = 0; i < inputFilePaths.size();++i){
         FILE *csvFilePointer = fopen(inputFilePaths[i].c_str(), "r");
         if (csvFilePointer == nullptr) {
-            exit(EXIT_FAILURE);
+           return 0;
         }
         std::vector<dbMartEntry> localDBMart = extractDBMartFromCsv(csvFilePointer,patIDColumns[i], phenxColumns[i], dateColumns [i], inputFileDelimiter);
         dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());

@@ -4,11 +4,12 @@
 
 std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
                                               int dateColumn, char delim){
-    if (csv_file == nullptr) {
-        exit(EXIT_FAILURE);
-    }
-    std::vector<std::string> lines;
     std::vector<dbMartEntry> dbMartEntries;
+    std::vector<std::string> lines;
+    if (csv_file == nullptr) {
+        return dbMartEntries;
+    }
+
     char line[2048];
     size_t len = 2048;
     fgets(line, len, csv_file);
