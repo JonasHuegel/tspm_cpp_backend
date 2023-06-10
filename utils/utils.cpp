@@ -15,7 +15,7 @@ std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, i
     fgets(line, len, csv_file);
     while(fgets(line, len, csv_file) != nullptr){
         lines = getTokensFromLine(std::string(line), delim);
-        dbMartEntry entry;
+        dbMartEntry entry = {};
         entry.patID = atoi(lines[patIdColumn].c_str());
         entry.phenID = atoi(lines[phenotypeIDColumn].c_str());
         entry.date = getTimeFromString(lines[dateColumn].c_str());
@@ -100,12 +100,11 @@ std::int64_t getFileSize(const std::string& filename){
 
 std::map<std::int64_t, size_t>
 summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
-                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift) {
+                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift, int numOfThreads) {
 
     std::map<std::int64_t, size_t> globalSequenceMap;
-    const int numOfProcs = omp_get_max_threads();
-    std::map<std::int64_t, size_t> localmaps[numOfProcs];
-    std::vector<int> patientsPerThread(numOfProcs);
+    std::map<std::int64_t, size_t> localmaps[numOfThreads];
+    std::vector<int> patientsPerThread(numOfThreads);
     std::mutex map_mutex;
 #pragma omp parallel for default (none) shared(numberOfPatients, file_prefix, outputDir,storesDuration,localmaps,patientsPerThread,map_mutex, globalSequenceMap, patIdLength, bitShift)
     for (size_t i = 0; i < numberOfPatients; ++i) {
@@ -142,7 +141,7 @@ summarizeSequencesFromFiles(const std::string &outputDir, const std::string &fil
     }
 
     //merge all local maps into final map
-    for (int i = 0; i < numOfProcs; ++i) {
+    for (int i = 0; i < numOfThreads; ++i) {
         for (std::pair<std::int64_t, size_t> entry: localmaps[i]) {
             globalSequenceMap[entry.first] += entry.second;
         }
@@ -238,11 +237,11 @@ std::filesystem::path createOutputFilePath(const std::string &outPutDirectory) {
 /**
  * Function to identify possible candidate phenx from the sequences that might be of interest given a list of specific phenx
  * @param originalSequences the original sequences, the duration should not be stored in the identifier
- * @param minDuration the minimal duration that at least one sequence of each unique sequence starting with a phenx of interestshould have
+ * @param minDuration the minimal duration that at least one sequence of each unique sequence starting with a phenx of interest should have
  * @param bitShift
  * @param lengthOfPhenx the length defined for each phenx when combining then into a sequence
  * @param phenxOfInterest an array, containing all starting phenx ids
- * @param numOfThreads the number of threads for paralleisation
+ * @param numOfThreads the number of threads for parallelization
  */
 std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                                           unsigned int bitShift, unsigned int lengthOfPhenx,
@@ -264,13 +263,13 @@ std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSe
         }
         unsigned int startPhenx = getStartPhenx(originalSequences[startPos],lengthOfPhenx);
         if(isPhenxOfInterest( startPhenx, phenxOfInterest)){
-            unsigned int mininmalDuration = 0;
+            unsigned int minimalDuration = 0;
             unsigned int endPhenx = getEndPhenx(originalSequences[startPos],lengthOfPhenx);
             for(size_t j = startPos; j < endPos; ++j ){
                 temporalSequence seq = originalSequences[j];
-                mininmalDuration = std::max(mininmalDuration,  seq.duration);
+                minimalDuration = std::max(minimalDuration, seq.duration);
             }
-            if(mininmalDuration >= minDuration){
+            if(minimalDuration >= minDuration){
                 candidatePhenxs[omp_get_thread_num()].insert(endPhenx);
             }
         }
@@ -341,12 +340,12 @@ std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temp
         }
 
         if(isPhenxOfInterest(getStartPhenx(originalSequences[startPos],lengthOfPhenx), phenxOfInterest)){
-            unsigned int mininmalDuration = 0;
+            unsigned int minimalDuration = 0;
             for(size_t j = startPos; j < endPos; ++j ){
                 temporalSequence seq = originalSequences[j];
-                mininmalDuration = std::max(mininmalDuration,  seq.duration);
+                minimalDuration = std::max(minimalDuration, seq.duration);
             }
-            if (mininmalDuration >= minDuration) {
+            if (minimalDuration >= minDuration) {
                 candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),
                                                                 originalSequences.begin()+startPos,
                                                                 originalSequences.begin()+endPos);

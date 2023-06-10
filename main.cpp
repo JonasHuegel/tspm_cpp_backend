@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     bool removeSparseSequences = true;
     bool createTemporalBuckets = false;
     double durationPeriods = DURATION_IN_MONTHS;
-    unsigned int daysForCoOoccurence = 14;
+    unsigned int coOccurrence = 14;
     bool durationSparsity = true;
     double durationSparsityValue = 0.05;
     bool storeSeqDuringCreation = false;
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     int dateColumns[1] = {2};
 //    std::vector<temporalSequence> seq = sequenceWorkflowFromCsVFiles( inputFilePaths, inputFileDelimiter, patIdColumns, phenxIDColumns,
 //                                  dateColumns, storeSeqDuringCreation, outputDir, description, removeSparseSequences,
-//                                  sparsity,createTemporalBuckets, durationPeriods, daysForCoOoccurence,
+//                                  sparsity,createTemporalBuckets, durationPeriods, coOccurrence,
 //                                  durationSparsity, durationSparsityValue, removeSparseBuckets,7,1);
 //    std::cout<< "Number of sequences: " << seq.size() << std::endl;
 
@@ -54,19 +54,19 @@ int main(int argc, char *argv[]) {
     durationSparsityValue = 0;
     durationSparsity = false;
     std::vector<temporalSequence> nonSparseSequences = sequenceWorkflow(dbMart,
-                     storeSeqDuringCreation,
-                     outputDir,
-                     description,
-                     removeSparseSequences,
-                     sparsity,
-                     createTemporalBuckets,
-                     durationPeriods,
-                     daysForCoOoccurence,
-                     durationSparsity,
-                     durationSparsityValue,
-                     removeSparseBuckets,
-                     7,
-                     16);
+                                                                        storeSeqDuringCreation,
+                                                                        outputDir,
+                                                                        description,
+                                                                        removeSparseSequences,
+                                                                        sparsity,
+                                                                        createTemporalBuckets,
+                                                                        durationPeriods,
+                                                                        coOccurrence,
+                                                                        durationSparsity,
+                                                                        durationSparsityValue,
+                                                                        removeSparseBuckets,
+                                                                        7,
+                                                                        16);
 
     std::vector<unsigned int> phenx;
     phenx.emplace_back(3);

@@ -31,7 +31,7 @@ std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, s
 
 std::map<std::int64_t, size_t>
 summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
-                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24);
+                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24, int numOfThreads = 1);
 
 std::int64_t getFileSize(const std::string& filename);
 
@@ -57,7 +57,7 @@ bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInt
 unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
 unsigned int getEndPhenx(int64_t sequence, unsigned int lengthOfPhenx);
 
-//we assume that the duraion is not stored in the sequence id, but instead in the duration field of the struct
+//we assume that the duration is not stored in the sequence id, but instead in the duration field of the struct
 unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
 
 std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,

@@ -22,13 +22,13 @@ const double DURATION_IN_YEARS = 365.25;
 std::vector<temporalSequence> extractMonthlySequences(std::vector<temporalSequence> &sequences, bool durationSparsity,
                                                       double sparsity, size_t numOfPatients, int numOfThreads = 1,
                                                       double durationPeriods = DURATION_IN_MONTHS,
-                                                      unsigned int daysForCoOoccurence = 14,  unsigned int bitShift = 52);
+                                                      unsigned int daysForCoOccurrence = 14, unsigned int bitShift = 52);
 
-unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOoccurence);
+unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOccurrence);
 
 
-std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunkes(std::vector<temporalSequence> &sequences, unsigned int chunks, double durationPeriods = DURATION_IN_DAYS,
-                                                                        unsigned int daysForCoOoccurence = 0);
+std::vector<std::vector<temporalSequence>> splitSequenceVectorInChunks(std::vector<temporalSequence> &sequences, unsigned int chunks, double durationPeriods = DURATION_IN_DAYS,
+                                                                       unsigned int daysForCoOccurrence = 0);
 std::vector<size_t> extractStartPositions(std::vector<dbMartEntry> &dbMart);
 
 size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char inputFileDelimiter,
@@ -39,13 +39,13 @@ size_t createSequencesFromFiles (std::vector<std::string> inputFilePaths, char i
 std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
                                                      const size_t *startPositions,
                                                      std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
-                                                     double durationPeriods, unsigned int daysForCoOoccurence,
+                                                     double durationPeriods, unsigned int daysForCoOccurrence,
                                                      size_t sparsityThreshold, bool removeSparseBuckets);
 
 std::vector<temporalSequence>
 extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
                           std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads, double durationPeriod = DURATION_IN_MONTHS,
-                          int daysForCoOccurence = 14);
+                          int daysForCoOccurrence = 14);
 
 size_t extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t * startPositions,
                                  const std::string& outPutDirectory,const std::string& outputFilePrefix,
