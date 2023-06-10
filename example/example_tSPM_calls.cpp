@@ -1,11 +1,10 @@
-#include "utils/sequencing.h"
-#include "utils/workflows.h"
-
-
+#include "../tspmPlus.h"
 
 
 int main(int argc, char *argv[]) {
-    omp_set_num_threads(16);
+
+    std::cout << sizeof (unsigned int) << " " << sizeof (std::uint64_t)<< std::endl;
+    omp_set_num_threads(11);
 //    std::string fileName = "/home/jonas/CLionProjects/tspm_cpp_backend/data/dbmart_fourtimes_processed.csv";
     std::string fileName = "/home/jonas/dbmart_num.test.csv";
     std::string description = "tspm_test_";
@@ -15,7 +14,7 @@ int main(int argc, char *argv[]) {
     double sparsity = 0.05;
     bool removeSparseSequences = true;
     bool createTemporalBuckets = false;
-    double durationPeriods = DURATION_IN_MONTHS;
+    double durationPeriods = tspm::DURATION_IN_MONTHS;
     unsigned int coOccurrence = 14;
     bool durationSparsity = true;
     double durationSparsityValue = 0.05;
@@ -34,16 +33,16 @@ int main(int argc, char *argv[]) {
 //                                  durationSparsity, durationSparsityValue, removeSparseBuckets,7,1);
 //    std::cout<< "Number of sequences: " << seq.size() << std::endl;
 
-    std::vector<dbMartEntry> dbMart;
+    std::vector<tspm::dbMartEntry> dbMart;
     for (int i = 0; i < 20; ++i) {
-        dbMartEntry entry;
+        tspm::dbMartEntry entry;
         entry.patID = i%3;
         entry.phenID = i%3 + i;
         entry.date = INT64_MAX/(i+1);
         dbMart.emplace_back(entry);
     }
 
-    std::sort(dbMart.begin(), dbMart.end(), dbMartSorter);
+    std::sort(dbMart.begin(), dbMart.end(), tspm::dbMartSorter);
     size_t startPositions[3];
     startPositions[0] = 0;
     for (int i = 1; i < 20; ++i) {
@@ -53,7 +52,7 @@ int main(int argc, char *argv[]) {
     }
     durationSparsityValue = 0;
     durationSparsity = false;
-    std::vector<temporalSequence> nonSparseSequences = sequenceWorkflow(dbMart,
+    std::vector<tspm::temporalSequence> nonSparseSequences = tspm::sequenceWorkflow(dbMart,
                                                                         storeSeqDuringCreation,
                                                                         outputDir,
                                                                         description,
@@ -71,11 +70,11 @@ int main(int argc, char *argv[]) {
     std::vector<unsigned int> phenx;
     phenx.emplace_back(3);
     int t = 16;
-    auto  a = extractEndPhenxWithGivenStartPhenx(nonSparseSequences,3,0,7,phenx,t);
-    extractSequencesWithEnd(nonSparseSequences,0,7, a, t);
-//    std::cout << extractSequencesFromArray(dbMart, 3, startPositions,outputDir,description,7, 1);
+    auto  a = tspm::extractEndPhenxWithGivenStartPhenx(nonSparseSequences,3,0,7,phenx,t);
+    tspm::extractSequencesWithEnd(nonSparseSequences,0,7, a, t);
+//    std::cout << tspm::extractSequencesFromArray(dbMart, 3, startPositions,outputDir,description,7, 1);
 //    std::cout << std::endl;
-//    std::map<std::uint64_t, size_t> sequences = summarizeSequencesFromFiles(3, false, outputDir,description);
+//    std::map<std::uint64_t, size_t> sequences = tspm::summarizeSequencesFromFiles(3, false, outputDir,description);
 //    size_t sparsityThreshold = 3 * sparsity;
 //    std::cout << "sparsity= " << sparsity << " sparsity threshold: " << sparsityThreshold <<std::endl;
 //    for(auto it = sequences.begin(); it != sequences.end();){
@@ -85,7 +84,7 @@ int main(int argc, char *argv[]) {
 //            ++it;
 //        }
 //    }
-//    std::vector<temporalSequence> nonSparseSequences = extractNonSparseSequences(dbMart, 3, startPositions,
+//    std::vector<tspm::temporalSequence> nonSparseSequences = tspm::extractNonSparseSequences(dbMart, 3, startPositions,
 //                                                                              sequences, 16, false, false);
     return 0;
 

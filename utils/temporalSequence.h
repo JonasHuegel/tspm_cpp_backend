@@ -6,11 +6,11 @@
 #define TSPM_CPP_BACKEND_TEMPORALSEQUENCE_H
 
 #include <cstdint>
-
-struct temporalSequence{
-    std::int64_t seqID;
-    unsigned int duration;
-    unsigned int patientID;
-}__attribute__((packed));
-
+namespace tspm {
+    struct temporalSequence {
+        std::int64_t seqID;
+        unsigned int duration;
+        unsigned int patientID;
+    }__attribute__((packed));
+}//tspm
 #endif //TSPM_CPP_BACKEND_TEMPORALSEQUENCE_H

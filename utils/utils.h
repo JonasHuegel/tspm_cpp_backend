@@ -15,60 +15,68 @@
 #include <set>
 #include <filesystem>
 
-size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
+namespace tspm {
+    size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
-std::map<std::int64_t, size_t>
-summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
-                             unsigned int &numOfThreads, unsigned  int phenxIdLength = 7);
+    std::map<std::int64_t, size_t>
+    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
+                                 unsigned int &numOfThreads, unsigned int phenxIdLength = 7);
 
-std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
+    std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
-std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
+    std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
 
-size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
+    size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
-std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, std::int64_t endDate);
+    std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, std::int64_t endDate);
 
-std::map<std::int64_t, size_t>
-summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
-                            bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24, int numOfThreads = 1);
+    std::map<std::int64_t, size_t>
+    summarizeSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                                bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24,
+                                int numOfThreads = 1);
 
-std::int64_t getFileSize(const std::string& filename);
+    std::int64_t getFileSize(const std::string &filename);
 
-unsigned int getDuration(std::int64_t startDate, std::int64_t endDate);
+    unsigned int getDuration(std::int64_t startDate, std::int64_t endDate);
 
-std::int64_t getTimeFromString(const char * date_string);
+    std::int64_t getTimeFromString(const char *date_string);
 
-std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
-                                              int dateColumn, char delim = ',');
+    std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
+                                                  int dateColumn, char delim = ',');
 
-std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
-                         temporalSequence * temporalSequences, bool debug =false);
+    std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
+                                     temporalSequence *temporalSequences, bool debug = false);
 
-std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
+    std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
 
-std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences);
+    std::vector<size_t> getSequenceStartPositions(std::vector<temporalSequence> &sequences);
 
-unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
-unsigned int getStartPhenx(int64_t sequence, unsigned int lengthOfPhenx);
+    unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
 
-bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest);
+    unsigned int getStartPhenx(int64_t sequence, unsigned int lengthOfPhenx);
 
-unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
-unsigned int getEndPhenx(int64_t sequence, unsigned int lengthOfPhenx);
+    bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest);
+
+    unsigned int getEndPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx);
+
+    unsigned int getEndPhenx(int64_t sequence, unsigned int lengthOfPhenx);
 
 //we assume that the duration is not stored in the sequence id, but instead in the duration field of the struct
-unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
+    unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits);
 
-std::set<unsigned int> extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
+    std::set<unsigned int>
+    extractEndPhenxWithGivenStartPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
+                                       unsigned int bitShift, unsigned int lengthOfPhenx,
+                                       std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
+
+    std::vector<temporalSequence>
+    extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
+                                      unsigned int bitShift, unsigned int lengthOfPhenx,
+                                      std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
+
+    std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
                                                           unsigned int bitShift, unsigned int lengthOfPhenx,
-                                                          std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
-
-std::vector<temporalSequence> extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
-                                                                unsigned int bitShift, unsigned int lengthOfPhenx,
-                                                                std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
-std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
-                             unsigned int bitShift, unsigned int lengthOfPhenx, std::set<unsigned  int> &allEndPhenx,
-                             int &numOfThreads);
-
+                                                          std::set<unsigned int> &allEndPhenx,
+                                                          int &numOfThreads);
+}//tspm
 #endif //TSPM_UTILS_H
