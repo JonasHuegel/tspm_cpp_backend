@@ -26,7 +26,7 @@ namespace tspm {
 
     std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
 
-    size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
+    size_t writeSequencesToBinaryFile(const std::string& patientFilename, std::vector<std::int64_t> &sequences);
 
     std::int64_t addDurationToSequence(std::int64_t &back, std::int64_t startDate, std::int64_t endDate);
 

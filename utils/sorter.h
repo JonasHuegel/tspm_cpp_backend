@@ -11,6 +11,6 @@ namespace tspm {
 
     bool timedSequenceByPatientIDSorter(temporalSequence const &first, temporalSequence const &second);
 
-    bool dbMartSorter(const dbMartEntry first, const dbMartEntry second);
+    bool dbMartSorter(const dbMartEntry &first, const dbMartEntry &second);
 }//tspm
 #endif //TSPM_CPP_BACKEND_SORTER_H

@@ -11,7 +11,7 @@ namespace tspm {
         }
 
         char line[2048];
-        size_t len = 2048;
+        int len = 2048;
         fgets(line, len, csv_file);
         while (fgets(line, len, csv_file) != nullptr) {
             lines = getTokensFromLine(std::string(line), delim);
@@ -27,7 +27,7 @@ namespace tspm {
     }
 
 
-    size_t writeSequencesToBinaryFile(std::string patientFilename, std::vector<std::int64_t> &sequences) {
+    size_t writeSequencesToBinaryFile(const std::string& patientFilename, std::vector<std::int64_t> &sequences) {
         FILE *patientFile;
         patientFile = fopen(patientFilename.c_str(), "wb");
         size_t written = 0;

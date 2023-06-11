@@ -276,9 +276,6 @@ namespace tspm {
             size_t i;
             for (i = 0; i < seqs.size() && seqs[i].patientID < UINT32_MAX; ++i);
             mergedSequences.insert(mergedSequences.end(), seqs.begin(), seqs.begin() + i);
-//        auto it = seqs.begin();
-//        for(; it != seqs.end() && it->patientID < UINT32_MAX; ++it );
-//        mergedSequences.insert(mergedSequences.end(), seqs.begin(), it);
             seqs.clear();
             seqs.shrink_to_fit();
         }
