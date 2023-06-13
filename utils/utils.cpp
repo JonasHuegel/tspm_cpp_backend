@@ -178,7 +178,7 @@ namespace tspm {
                 }
             }
 
-            if(localPatCount>=50){
+            if(localPatCount>=25){
                 map_mutex.lock();
                 for (auto mapEntry: localmaps[omp_get_thread_num()]) {
                     if (auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()) {
@@ -206,6 +206,7 @@ namespace tspm {
                     it->second += mapEntry.second;
                 }
             }
+            localmaps[i].clear();
         }
         return globalSequenceMap;
     }
