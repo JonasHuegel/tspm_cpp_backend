@@ -157,7 +157,9 @@ namespace tspm {
         std::map<std::int64_t, size_t> localmaps[numOfThreads];
         size_t numOfPatients = startPositions.size();
         omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(startPositions, dbMart, localmaps, globalSequenceMap, phenxIdLength, numOfPatients)
+        int localPatCount = 0;
+        std::mutex map_mutex;
+#pragma omp parallel for default (none) shared(startPositions, dbMart, localmaps, globalSequenceMap, phenxIdLength, numOfPatients, map_mutex) private(localPatCount)
         for (size_t i = 0; i < numOfPatients; ++i) {
             size_t startPos = startPositions[i];
             size_t endPos = i < numOfPatients - 1 ? startPositions[i + 1] : dbMart.size();
@@ -174,6 +176,22 @@ namespace tspm {
                         }
                     }
                 }
+            }
+
+            if(localPatCount>=50){
+                map_mutex.lock();
+                for (auto mapEntry: localmaps[omp_get_thread_num()]) {
+                    if (auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()) {
+                        globalSequenceMap.insert(std::make_pair(mapEntry.first, mapEntry.second));
+                    } else {
+                        it->second += mapEntry.second;
+                    }
+                }
+                map_mutex.unlock();
+                localmaps[omp_get_thread_num()].clear();
+                localPatCount = 0;
+            }else{
+                ++localPatCount;
             }
         }
 
