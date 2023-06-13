@@ -3,15 +3,14 @@
 #include <string>
 
 namespace tspm {
-    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
-                                                         const size_t *startPositions,
+    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart,std::vector<size_t> &startPositions,
                                                          std::map<std::int64_t, size_t> &nonSparseSequencesIDs,
                                                          int numOfThreads,
                                                          double durationPeriods, unsigned int daysForCoOccurrence,
                                                          size_t sparsityThreshold, bool removeSparseBuckets) {
 
         std::vector<temporalSequence> nonSparseSequences =
-                extractNonSparseSequences(dbMart, numOfPatients, startPositions,
+                extractNonSparseSequences(dbMart, startPositions,
                                           nonSparseSequencesIDs,
                                           numOfThreads, durationPeriods, daysForCoOccurrence);
 
@@ -125,7 +124,7 @@ namespace tspm {
             dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());
         }
         std::vector<size_t> startPositions = extractStartPositions(dbMart);
-        return extractSequencesFromArray(dbMart, numOfPatients, startPositions.data(), outPutDirectory,
+        return extractSequencesFromArray(dbMart, startPositions, outPutDirectory,
                                          outputFilePrefix, patIdLength, numOfThreads);
     }
 
@@ -143,10 +142,11 @@ namespace tspm {
 
 
     size_t
-    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
+    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                               const std::string &outPutDirectory, const std::string &outputFilePrefix, int patIDLength,
                               int numOfThreads) {
         omp_set_num_threads(numOfThreads);
+        size_t numOfPatients = startPositions.size();
         auto numOfSequences = new size_t[numOfThreads];
         std::fill_n(numOfSequences, numOfThreads, 0);
         size_t numberOfDbMartEntries = dbMart.size();
@@ -296,10 +296,11 @@ namespace tspm {
     }
 
     std::vector<temporalSequence>
-    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
+    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart,  std::vector<size_t> startPositions,
                               std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
                               double durationPeriod,
                               int daysForCoOccurrence) {
+        size_t numOfPatients = startPositions.size();
         size_t numberOfDbMartEntries = dbMart.size();
         std::vector<temporalSequence> localSequences[numOfThreads];
         omp_set_num_threads(numOfThreads);
@@ -335,6 +336,48 @@ namespace tspm {
                       << allSequences.size() << " sequences!" << std::endl;
         }
         return allSequences;
+    }
+
+
+
+    std::vector<temporalSequence>
+    extractSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
+                           int numOfThreads, double durationPeriod, int daysForCoOccurrence){
+        size_t numOfPatients = startPositions.size();
+        size_t numberOfDbMartEntries = dbMart.size();
+        std::vector<temporalSequence> localSequences[numOfThreads];
+        omp_set_num_threads(numOfThreads);
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, localSequences, durationPeriod, daysForCoOccurrence, daysPerWeek, daysPerMonth)
+        for (size_t i = 0; i < numOfPatients; ++i) {
+            size_t startPos = startPositions[i];
+            size_t endPos = i < numOfPatients - 1 ? startPositions[i + 1] : numberOfDbMartEntries;
+
+            for (size_t j = startPos; j < endPos - 1; ++j) {
+                for (size_t k = j + 1; k < endPos; ++k) {
+                    std::int64_t sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID);
+                        unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
+                        duration = getDurationPeriod(duration, durationPeriod, daysForCoOccurrence);
+                        temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) i)};
+                        localSequences[omp_get_thread_num()].emplace_back(sequenceStruct);
+                }
+            }
+        }
+        std::cout << "merging sequencing vectors from all threads" << std::endl;
+        std::vector<temporalSequence> allSequences;
+        size_t sumOfSequences = 0;
+        for (int i = 0; i < numOfThreads; ++i) {
+            sumOfSequences += localSequences[i].size();
+            allSequences.insert(allSequences.end(), localSequences[i].begin(), localSequences[i].end());
+            localSequences[i].clear();
+            localSequences[i].shrink_to_fit();
+        }
+        if (allSequences.size() != sumOfSequences) {
+            std::cout << "Error during vector merging! Expected " << sumOfSequences
+                      << " sequences, but allSequences stores "
+                      << allSequences.size() << " sequences!" << std::endl;
+        }
+        return allSequences;
+
     }
 
 

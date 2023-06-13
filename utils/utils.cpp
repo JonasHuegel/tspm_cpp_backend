@@ -177,9 +177,9 @@ namespace tspm {
                     }
                 }
             }
-
-            if(localPatCount>=25){
-                map_mutex.lock();
+            omp_set_schedule(omp_sched_dynamic,1);
+            if(map_mutex.try_lock()){
+//                map_mutex.lock();
                 for (auto mapEntry: localmaps[omp_get_thread_num()]) {
                     if (auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()) {
                         globalSequenceMap.insert(std::make_pair(mapEntry.first, mapEntry.second));

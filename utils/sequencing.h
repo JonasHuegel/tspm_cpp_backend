@@ -41,21 +41,25 @@ namespace tspm {
                                     int patIDColumns[], int phenxColumns[], int dateColumns[], size_t numOfPatients,
                                     int patIdLength, int numOfThreads);
 
-    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, size_t numOfPatients,
-                                                         const size_t *startPositions,
+    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                                                          std::map<std::int64_t, size_t> &nonSparseSequencesIDs,
                                                          int numOfThreads,
                                                          double durationPeriods, unsigned int daysForCoOccurrence,
                                                          size_t sparsityThreshold, bool removeSparseBuckets);
 
     std::vector<temporalSequence>
-    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
+    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                               std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
                               double durationPeriod = DURATION_IN_MONTHS,
                               int daysForCoOccurrence = 14);
 
+    std::vector<temporalSequence>
+    extractSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
+                              int numOfThreads, double durationPeriod = DURATION_IN_MONTHS,
+                              int daysForCoOccurrence = 14);
+
     size_t
-    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, size_t numOfPatients, const size_t *startPositions,
+    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                               const std::string &outPutDirectory, const std::string &outputFilePrefix,
                               int patIDLength = 7, int numOfThreads = 1);
 
