@@ -151,7 +151,7 @@ namespace tspm {
     }
 
     std::map<std::int64_t, size_t>
-    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
+    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                                  unsigned int &numOfThreads, unsigned int phenxIdLength) {
         std::map<std::int64_t, size_t> globalSequenceMap;
         std::map<std::int64_t, size_t> localmaps[numOfThreads];

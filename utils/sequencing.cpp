@@ -296,7 +296,7 @@ namespace tspm {
     }
 
     std::vector<temporalSequence>
-    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart,  std::vector<size_t> startPositions,
+    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart,  std::vector<size_t> &startPositions,
                               std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
                               double durationPeriod,
                               int daysForCoOccurrence) {
