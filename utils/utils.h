@@ -19,7 +19,7 @@ namespace tspm {
     size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
     std::map<std::int64_t, size_t>
-    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> startPositions,
+    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                                  unsigned int &numOfThreads, unsigned int phenxIdLength = 7);
 
     std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
