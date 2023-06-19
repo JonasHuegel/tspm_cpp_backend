@@ -24,7 +24,7 @@ namespace tspm {
 
     std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
-    std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght = 7);
+    std::int64_t createSequence(int phenotypeA, int phenotypeB, unsigned int phenotypelenght = 7);
 
     size_t writeSequencesToBinaryFile(const std::string& patientFilename, std::vector<std::int64_t> &sequences);
 

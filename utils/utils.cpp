@@ -53,7 +53,7 @@ namespace tspm {
         return written;
     }
 
-    std::int64_t createSequence(int phenotypeA, int phenotypeB, int phenotypelenght) {
+    std::int64_t createSequence(int phenotypeA, int phenotypeB, unsigned int phenotypelenght) {
         std::string phenA = std::to_string(phenotypeA);
         std::string phenB = std::to_string(phenotypeB);
         phenB.insert(phenB.begin(), phenotypelenght - phenB.size(), '0');
