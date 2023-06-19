@@ -150,6 +150,88 @@ namespace tspm {
         return globalSequenceMap;
     }
 
+    std::vector<temporalSequence> removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
+                               unsigned int numOfThreads) {
+        ips4o::parallel::sort(sequences.begin(), sequences.end() ,
+                              timedSequencesSorter, numOfThreads);
+        std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
+
+        omp_set_num_threads(numOfThreads);
+        size_t sparsityThreshold = numOfPatients * sparsity;
+#pragma omp parallel for default (none) shared(sequenceStartPos, sequences, sparsityThreshold )
+        for (size_t i = 0; i < sequenceStartPos.size(); ++i) {
+            size_t startPos = sequenceStartPos[i];
+            size_t endPos;
+            if (i < sequenceStartPos.size() - 1) {
+                endPos = sequenceStartPos[i + 1];
+            } else {
+                endPos = sequences.size();
+            }
+            size_t numOfSequences = endPos - startPos;
+            if(numOfSequences < sparsityThreshold){
+                for (size_t j = startPos; j < endPos; ++j) {
+                    sequences[j].patientID = UINT32_MAX;
+                }
+            }
+        }
+        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequenceByPatientIDSorter, numOfThreads);
+        auto it = sequences.begin();
+        while(it!= sequences.end() && it->patientID < UINT32_MAX ){
+            ++it;
+        }
+        sequences.erase(it, sequences.end());
+        sequences.shrink_to_fit();
+        return sequences;
+    }
+
+    std::vector<temporalSequence> readSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                                                         bool storesDuration, unsigned int patIdLength, unsigned int bitShift,
+                                                         int numOfThreads){
+
+        std::vector<temporalSequence> allSequences;
+        std::vector<temporalSequence> localSequences[numOfThreads];
+        std::vector<int> patientsPerThread(numOfThreads);
+        std::mutex map_mutex;
+#pragma omp parallel for default (none) shared(numberOfPatients, file_prefix, outputDir, storesDuration, localSequences, patientsPerThread, map_mutex, allSequences, patIdLength, bitShift)
+        for (size_t i = 0; i < numberOfPatients; ++i) {
+            std::string patIDString = std::to_string(i);
+            patIDString.insert(patIDString.begin(), patIdLength - patIDString.size(), '0');
+            std::string patientFileName = std::string(outputDir).append(file_prefix).append(patIDString);
+            std::int64_t numberOfSequences = getFileSize(patientFileName) / sizeof(std::int64_t);
+            FILE *patientFile = fopen(patientFileName.c_str(), "rb");
+            for (int j = 0; j < numberOfSequences; ++j) {
+                temporalSequence sequence = {};
+                sequence.patientID = i;
+                fread(&sequence.seqID, sizeof(std::int64_t), 1, patientFile);
+
+                if (storesDuration) {
+                    sequence.seqID = (sequence.seqID << bitShift) >> bitShift;
+                    sequence.duration = sequence.seqID >> sizeof(uint64_t)*8 - bitShift;
+                } else{
+                    sequence.duration = 0;
+                }
+                localSequences[omp_get_thread_num()].emplace_back(sequence);
+            }
+            fclose(patientFile);
+            if(++patientsPerThread[omp_get_thread_num()] > 10 && map_mutex.try_lock()){
+                allSequences.insert(allSequences.end(),
+                                    localSequences[omp_get_thread_num()].begin(),
+                                    localSequences[omp_get_thread_num()].end());
+                map_mutex.unlock();
+                localSequences[omp_get_thread_num()].clear();
+                localSequences[omp_get_thread_num()].shrink_to_fit();
+            }
+        }
+        for (int i = 0; i < numOfThreads; ++i) {
+            if(!localSequences[i].empty()) {
+                allSequences.insert(allSequences.end(), localSequences[i].begin(), localSequences[i].end());
+                localSequences[i].clear();
+                localSequences[i].shrink_to_fit();
+            }
+        }
+        return allSequences;
+    }
+
     std::map<std::int64_t, size_t>
     summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                                  unsigned int &numOfThreads, unsigned int phenxIdLength) {

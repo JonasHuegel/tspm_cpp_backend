@@ -14,9 +14,17 @@
 #include <mutex>
 #include <set>
 #include <filesystem>
+#include "sequencing.h"
 
 namespace tspm {
     size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
+
+    std::vector<temporalSequence> readSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                                                          bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24,
+                                                          int numOfThreads = 1);
+
+    std::vector<temporalSequence> removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
+                               unsigned int numOfThreads);
 
     std::map<std::int64_t, size_t>
     summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,

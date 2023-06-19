@@ -13,7 +13,7 @@ namespace tspm {
                      double sparsity_value, bool createTemporalBuckets, double durationPeriods,
                      unsigned int daysForCoOccurrence, bool durationSparsity,
                      double durationSparsityValue, bool removeSparseTemporalBuckets,
-                     unsigned int patIdLength, unsigned int numOfThreads);
+                     unsigned int patIdLength, unsigned int numOfThreads, unsigned int phenxIdLength = 7);
 
 
     std::vector<temporalSequence>
@@ -24,6 +24,6 @@ namespace tspm {
                                  bool createTemporalBuckets, double durationPeriods,
                                  unsigned int daysForCoOccurrence, bool durationSparsity,
                                  double durationSparsityValue, bool removeSparseTemporalBuckets,
-                                 unsigned int patIdLength, unsigned int numOfThreads);
+                                 unsigned int patIdLength, unsigned int numOfThreads, unsigned int phenxIdLength =7);
 }//tspm
 #endif //TSPM_CPP_BACKEND_WORKFLOWS_H

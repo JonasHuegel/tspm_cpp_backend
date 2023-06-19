@@ -41,15 +41,17 @@ namespace tspm {
                                     int patIDColumns[], int phenxColumns[], int dateColumns[], size_t numOfPatients,
                                     int patIdLength, int numOfThreads, unsigned int phenxIdLength);
 
-    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
-                                                         std::map<std::int64_t, size_t> &nonSparseSequencesIDs,
+    std::vector<temporalSequence> extractTemporalBuckets(std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
                                                          int numOfThreads,
                                                          double durationPeriods, unsigned int daysForCoOccurrence,
-                                                         size_t sparsityThreshold, bool removeSparseBuckets , unsigned int phenxIdLength = 7);
+                                                         double sparsity, bool removeSparseBuckets , unsigned int phenxIdLength = 7);
+
+    std::vector<temporalSequence> extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,double sparsity,
+                                                            unsigned int &numOfThreads, double durationPeriod = DURATION_IN_MONTHS, int daysForCoOccurrence = 14, unsigned int phenxIdLength = 7);
 
     std::vector<temporalSequence>
-    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
-                              std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
+    extractSequencesOfInterest(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
+                              std::map<std::int64_t, size_t> &sequenceOfInterest, int numOfThreads,
                               double durationPeriod = DURATION_IN_MONTHS,
                               int daysForCoOccurrence = 14, unsigned int phenxIdLength = 7);
 
@@ -59,7 +61,7 @@ namespace tspm {
                               int daysForCoOccurrence = 14, unsigned int phenxIdLength = 7);
 
     size_t
-    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
+    writeSequencesFromArrayToFile(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                               const std::string &outPutDirectory, const std::string &outputFilePrefix,
                               int patIDLength = 7, int numOfThreads = 1 , unsigned int phenxIdLength = 7);
 

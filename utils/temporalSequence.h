@@ -10,7 +10,7 @@ namespace tspm {
     struct temporalSequence {
         std::int64_t seqID;
         unsigned int duration;
-        unsigned int patientID;
+        std::uint32_t   patientID;
     }__attribute__((packed));
 }//tspm
 #endif //TSPM_CPP_BACKEND_TEMPORALSEQUENCE_H

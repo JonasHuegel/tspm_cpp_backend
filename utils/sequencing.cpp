@@ -3,22 +3,13 @@
 #include <string>
 
 namespace tspm {
-    std::vector<temporalSequence> extractTemporalBuckets(std::vector<dbMartEntry> &dbMart,std::vector<size_t> &startPositions,
-                                                         std::map<std::int64_t, size_t> &nonSparseSequencesIDs,
+    std::vector<temporalSequence> extractTemporalBuckets( std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
                                                          int numOfThreads,
                                                          double durationPeriods, unsigned int daysForCoOccurrence,
-                                                         size_t sparsityThreshold, bool removeSparseBuckets ,unsigned int phenxIdLength) {
-
-        std::vector<temporalSequence> nonSparseSequences =
-                extractNonSparseSequences(dbMart, startPositions,
-                                          nonSparseSequencesIDs,
-                                          numOfThreads, durationPeriods, daysForCoOccurrence, phenxIdLength);
-
-
+                                                         double sparsity, bool removeSparseBuckets ,unsigned int phenxIdLength) {
         // split sequence vector in sub-vectors! //
         std::vector<std::vector<temporalSequence>> globalSequences(numOfThreads);
         globalSequences = splitSequenceVectorInChunks(nonSparseSequences, numOfThreads);
-
 
         std::cout << "creating arrays for start indices" << std::endl;
         std::vector<std::vector<size_t>> startIndices(omp_get_max_threads());
@@ -37,6 +28,7 @@ namespace tspm {
             }
         }
         std::cout << "computing temporal buckets" << std::endl;
+        size_t sparsityThreshold = sparsity * numOfPatients;
 
 #pragma omp parallel for shared(nonSparseSequences, removeSparseBuckets, sparsityThreshold, globalSequences, std::cout, startIndices) default (none)
         for (size_t i = 0; i < omp_get_max_threads(); ++i) {
@@ -124,7 +116,7 @@ namespace tspm {
             dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());
         }
         std::vector<size_t> startPositions = extractStartPositions(dbMart);
-        return extractSequencesFromArray(dbMart, startPositions, outPutDirectory,
+        return writeSequencesFromArrayToFile(dbMart, startPositions, outPutDirectory,
                                          outputFilePrefix, patIdLength, numOfThreads, phenxIdLength);
     }
 
@@ -142,7 +134,7 @@ namespace tspm {
 
 
     size_t
-    extractSequencesFromArray(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
+    writeSequencesFromArrayToFile(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
                               const std::string &outPutDirectory, const std::string &outputFilePrefix, int patIDLength,
                               int numOfThreads, unsigned int phenxIdLength) {
         omp_set_num_threads(numOfThreads);
@@ -282,6 +274,20 @@ namespace tspm {
         return mergedSequences;
     }
 
+
+
+
+    std::vector<temporalSequence> extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions, double sparsity,
+                                                            unsigned int &numOfThreads, double durationPeriod, int daysForCoOccurrence, unsigned int phenxIdLength){
+        std::vector<temporalSequence> sequences = extractSparseSequences(dbMart, startPositions, numOfThreads,
+                                                                            durationPeriod, daysForCoOccurrence);
+        std::cout << "Number of overall extracted Sequences: "<< sequences.size() << std::endl;
+        sequences = removeSparseSequences (sequences, startPositions.size(), sparsity, numOfThreads);
+        return sequences;
+    }
+
+
+
     unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOccurrence) {
         //if the duration is less than 2 weeks it is considered as co-occurrence and therefore the distance is 0
         if (daysForCoOccurrence <= 0)
@@ -296,15 +302,15 @@ namespace tspm {
     }
 
     std::vector<temporalSequence>
-    extractNonSparseSequences(std::vector<dbMartEntry> &dbMart,  std::vector<size_t> &startPositions,
-                              std::map<std::int64_t, size_t> &nonSparseSequencesIDs, int numOfThreads,
+    extractSequencesOfInterest(std::vector<dbMartEntry> &dbMart,  std::vector<size_t> &startPositions,
+                              std::map<std::int64_t, size_t> &sequenceOfInterest, int numOfThreads,
                               double durationPeriod,
                               int daysForCoOccurrence, unsigned int phenxIdLength) {
         size_t numOfPatients = startPositions.size();
         size_t numberOfDbMartEntries = dbMart.size();
         std::vector<temporalSequence> localSequences[numOfThreads];
         omp_set_num_threads(numOfThreads);
-#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, nonSparseSequencesIDs, localSequences, durationPeriod, daysForCoOccurrence, daysPerWeek, daysPerMonth, phenxIdLength)
+#pragma omp parallel for default (none) shared(numOfPatients, numberOfDbMartEntries, dbMart, startPositions, sequenceOfInterest, localSequences, durationPeriod, daysForCoOccurrence, daysPerWeek, daysPerMonth, phenxIdLength)
         for (size_t i = 0; i < numOfPatients; ++i) {
             size_t startPos = startPositions[i];
             size_t endPos = i < numOfPatients - 1 ? startPositions[i + 1] : numberOfDbMartEntries;
@@ -312,7 +318,7 @@ namespace tspm {
             for (size_t j = startPos; j < endPos - 1; ++j) {
                 for (size_t k = j + 1; k < endPos; ++k) {
                     std::int64_t sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID, phenxIdLength);
-                    if (nonSparseSequencesIDs.find(sequence) != nonSparseSequencesIDs.end()) {
+                    if (sequenceOfInterest.find(sequence) != sequenceOfInterest.end()) {
                         unsigned int duration = getDuration(dbMart[j].date, dbMart[k].date);
                         duration = getDurationPeriod(duration, durationPeriod, daysForCoOccurrence);
                         temporalSequence sequenceStruct = {sequence, duration, ((unsigned int) i)};

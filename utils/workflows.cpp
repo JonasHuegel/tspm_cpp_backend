@@ -4,91 +4,121 @@
 #include "workflows.h"
 
 namespace tspm{
+
     std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, bool storeSeqDuringCreation, const std::string &outPutDirectory,
                                                    const std::string &outputFilePrefix, bool removeSparseSequences,
                                                    double sparsity_value, bool createTemporalBuckets, double durationPeriods,
                                                    unsigned int daysForCoOccurrence, bool durationSparsity,
                                                    double durationSparsityValue, bool removeSparseTemporalBuckets,
-                                                   unsigned int patIdLength, unsigned int numOfThreads) {
+                                                   unsigned int patIdLength, unsigned int numOfThreads, unsigned int phenxIdLength) {
         std::vector<size_t> startPositions = extractStartPositions(dbMart);
-        std::map<std::int64_t, size_t> sequenceCount;
+        std::vector<temporalSequence> sequences;
         //===== extract sequence
         if(storeSeqDuringCreation) {
+            std::vector<temporalSequence> allSequences;
             std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
             std::cout << "extracting transitive sequences" << std::endl;
-            size_t numOfSequences = extractSequencesFromArray(dbMart, startPositions,
+            size_t numOfSequences = writeSequencesFromArrayToFile(dbMart, startPositions,
                                                               outputPath.string(), outputFilePrefix, patIdLength,
                                                               numOfThreads);
             std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
+            allSequences = readSequencesFromFiles(outputPath.string(), outputFilePrefix,
+                                                  startPositions.size(), false, patIdLength, 0, numOfThreads);
             if(removeSparseSequences) {
-                sequenceCount = summarizeSequencesFromFiles(outputPath.string(), outputFilePrefix,
-                                                            startPositions.size(), false, patIdLength, 0, numOfThreads);
+                allSequences = tspm::removeSparseSequences(allSequences,startPositions.size(), sparsity_value, numOfThreads);
+                std::cout << "extracted non-sparse sequences: "<<allSequences.size()  << "!" << std::endl;
+
             }
-            return {};
+            sequences = allSequences;
         }else if(removeSparseSequences){
-            sequenceCount = summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
+                sequences = extractNonSparseSequences(dbMart,startPositions,sparsity_value,numOfThreads,
+                                                      durationPeriods, daysForCoOccurrence,phenxIdLength);
+             std::cout << "extracted non-sparse sequences: "<<sequences.size()  << "!" << std::endl;
         }else{
-            return extractSparseSequences(dbMart,startPositions, numOfThreads, durationPeriods, daysForCoOccurrence);
+            sequences = extractSparseSequences(dbMart,startPositions, numOfThreads, durationPeriods, daysForCoOccurrence);
+            std::cout << "extracted sparse sequences: "<<sequences.size()  << "!" << std::endl;
         }
-        std::cout << "Number of overall unique sequences: " << sequenceCount.size() <<std::endl;
-        size_t sum =0;
-        for(auto entry : sequenceCount){
-            sum += entry.second;
-        }
-        std::cout << "Sum of overall unique sequences: " << sum << std::endl;
-
-        if(removeSparseSequences) {
-            //===== remove sparse sequences
-            std::cout << "determine sparse sequences" << std::endl;
-            size_t sparsityThreshold = startPositions.size() * sparsity_value;
-            std::cout << "sparsity= " << sparsity_value << " sparsity threshold: " << sparsityThreshold << std::endl;
-            for (auto it = sequenceCount.begin(); it != sequenceCount.end();) {
-                if (it->second < sparsityThreshold) {
-                    it = sequenceCount.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-            size_t numOfUniqueSequences = sequenceCount.size();
-            std::cout << "Number of unique non-sparse sequences: " << numOfUniqueSequences << std::endl;
-        }
-
-        std::vector<temporalSequence> sequences;
         if(!createTemporalBuckets){
             if(durationSparsity){
-                std::cout << "extracting sequences with non-sparse duration" <<std::endl;
-                std::vector<temporalSequence> nonSparseSequences;
-                nonSparseSequences = extractNonSparseSequences(dbMart, startPositions,
-                                                               sequenceCount, numOfThreads,
-                                                               DURATION_IN_MONTHS, 14);
-                std::cout << "extracted non-sparse sequences: "<<nonSparseSequences.size()  << "! Removing sparse durations" <<std::endl;
-                sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
+                std::cout << "! Removing sparse durations" <<std::endl;
+                sequences = extractMonthlySequences(sequences, durationSparsity,
                                                     durationSparsityValue,startPositions.size(),numOfThreads);
-
-            }else {
-                std::cout << "extracting (non-sparse) sequences" << std::endl;
-                sequences = extractNonSparseSequences(dbMart, startPositions, sequenceCount,
-                                                      numOfThreads, DURATION_IN_MONTHS,14);
             }
-
-
         }else {
             std::cout << "creating sequences with temporal buckets" << std::endl;
-
-            sequences = extractTemporalBuckets(dbMart, startPositions, sequenceCount, numOfThreads,
+            sequences = extractTemporalBuckets(sequences, startPositions.size(), numOfThreads,
                                                durationPeriods, daysForCoOccurrence, sparsity_value,
                                                removeSparseTemporalBuckets);
         }
         return sequences;
-
     }
+
+
+//    std::vector<temporalSequence> sequenceWorkflow(std::vector<dbMartEntry> &dbMart, bool storeSeqDuringCreation, const std::string &outPutDirectory,
+//                                                   const std::string &outputFilePrefix, bool removeSparseSequences,
+//                                                   double sparsity_value, bool createTemporalBuckets, double durationPeriods,
+//                                                   unsigned int daysForCoOccurrence, bool durationSparsity,
+//                                                   double durationSparsityValue, bool removeSparseTemporalBuckets,
+//                                                   unsigned int patIdLength, unsigned int numOfThreads) {
+//        std::vector<size_t> startPositions = extractStartPositions(dbMart);
+//        std::map<std::int64_t, size_t> sequenceCount;
+//        //===== extract sequence
+//        if(storeSeqDuringCreation) {
+//            std::filesystem::path outputPath = createOutputFilePath(outPutDirectory);
+//            std::cout << "extracting transitive sequences" << std::endl;
+//            size_t numOfSequences = extractSequencesFromArray(dbMart, startPositions,
+//                                                              outputPath.string(), outputFilePrefix, patIdLength,
+//                                                              numOfThreads);
+//            std::cout << "Number of extracted sequences: " << numOfSequences << std::endl;
+//            if(removeSparseSequences) {
+//                sequenceCount = summarizeSequencesFromFiles(outputPath.string(), outputFilePrefix,
+//                                                            startPositions.size(), false, patIdLength, 0, numOfThreads);
+//
+//            }
+//            return {};
+//        }else if(removeSparseSequences){
+//            sequenceCount = summarizeSequencesFromDbMart(dbMart, startPositions, numOfThreads);
+//        }else{
+//            return extractSparseSequences(dbMart,startPositions, numOfThreads, durationPeriods, daysForCoOccurrence);
+//        }
+//
+//
+//        std::vector<temporalSequence> sequences;
+//        if(!createTemporalBuckets){
+//            if(durationSparsity){
+//                std::cout << "extracting sequences with non-sparse duration" <<std::endl;
+//                std::vector<temporalSequence> nonSparseSequences;
+//                nonSparseSequences = extractNonSparseSequences(dbMart, startPositions,
+//                                                               sequenceCount, numOfThreads,
+//                                                               DURATION_IN_MONTHS, 14);
+//                std::cout << "extracted non-sparse sequences: "<<nonSparseSequences.size()  << "! Removing sparse durations" <<std::endl;
+//                sequences = extractMonthlySequences(nonSparseSequences, durationSparsity,
+//                                                    durationSparsityValue,startPositions.size(),numOfThreads);
+//
+//            }else {
+//                std::cout << "extracting (non-sparse) sequences" << std::endl;
+//                sequences = extractNonSparseSequences(dbMart, startPositions, sequenceCount,
+//                                                      numOfThreads, DURATION_IN_MONTHS,14);
+//            }
+//
+//
+//        }else {
+//            std::cout << "creating sequences with temporal buckets" << std::endl;
+//
+//            sequences = extractTemporalBuckets(dbMart, startPositions, sequenceCount, numOfThreads,
+//                                               durationPeriods, daysForCoOccurrence, sparsity_value,
+//                                               removeSparseTemporalBuckets);
+//        }
+//        return sequences;
+//
+//    }
 
     std::vector<temporalSequence> sequenceWorkflowFromCsVFiles(const std::vector<std::string>& inputFilePaths, char inputFileDelimiter,
                                                                int patIDColumns[], int phenxColumns[], int dateColumns[], bool storeSeqDuringCreation, const std::string& outPutDirectory,
                                                                const std::string& outputFilePrefix, bool removeSparseSequences, double sparsity_value,
                                                                bool createTemporalBuckets, double durationPeriods,
                                                                unsigned int daysForCoOccurrence, bool durationSparsity,
-                                                               double durationSparsityValue, bool removeSparseTemporalBuckets, unsigned int patIdLength, unsigned int numOfThreads){
+                                                               double durationSparsityValue, bool removeSparseTemporalBuckets, unsigned int patIdLength, unsigned int numOfThreads, unsigned int phenxIdLength){
         std::vector<dbMartEntry> dbMart;
         for(int i = 0; i < inputFilePaths.size();++i) {
             FILE *csvFilePointer = fopen(inputFilePaths[i].c_str(), "r");
@@ -102,6 +132,6 @@ namespace tspm{
 
         return sequenceWorkflow(dbMart, storeSeqDuringCreation, outPutDirectory, outputFilePrefix, removeSparseSequences, sparsity_value,
                                 createTemporalBuckets, durationPeriods, daysForCoOccurrence, durationSparsity, durationSparsityValue,
-                                removeSparseTemporalBuckets, patIdLength, numOfThreads);
+                                removeSparseTemporalBuckets, patIdLength, numOfThreads, phenxIdLength);
     }
 }//tspm
