@@ -40,10 +40,8 @@ namespace tspm {
                                     int patIDColumns[], int phenxColumns[], int dateColumns[], size_t numOfPatients,
                                     int patIdLength, int numOfThreads, unsigned int phenxIdLength);
 
-    std::vector<temporalSequence> extractTemporalBuckets(std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
-                                                         int numOfThreads,
-                                                         double durationPeriods, unsigned int daysForCoOccurrence,
-                                                         double sparsity, bool removeSparseBuckets , unsigned int phenxIdLength = 7);
+    std::vector<temporalSequence> extractDynamicTemporalBuckets(std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
+                                                         int numOfThreads, double sparsity, bool removeSparseBuckets);
 
     std::vector<temporalSequence> extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,double sparsity,
                                                             unsigned int &numOfThreads, double durationPeriod = DURATION_IN_MONTHS, int daysForCoOccurrence = 14, unsigned int phenxIdLength = 7);

@@ -49,9 +49,8 @@ namespace tspm{
             }
         }else {
             std::cout << "creating sequences with temporal buckets" << std::endl;
-            sequences = extractTemporalBuckets(sequences, startPositions.size(), numOfThreads,
-                                               durationPeriods, daysForCoOccurrence, sparsity_value,
-                                               removeSparseTemporalBuckets);
+            sequences = extractDynamicTemporalBuckets(sequences, startPositions.size(), numOfThreads,
+                                               sparsity_value, removeSparseTemporalBuckets);
         }
         return sequences;
     }

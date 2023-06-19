@@ -3,121 +3,46 @@
 #include <string>
 
 namespace tspm {
-    std::vector<temporalSequence> extractTemporalBuckets( std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
-                                                         int numOfThreads,
-                                                         double durationPeriods, unsigned int daysForCoOccurrence,
-                                                         double sparsity, bool removeSparseBuckets ,unsigned int phenxIdLength) {
-        // split sequence vector in sub-vectors! //
-        std::vector<std::vector<temporalSequence>> globalSequences(numOfThreads);
-        globalSequences = splitSequenceVectorInChunks(nonSparseSequences, numOfThreads);
 
-        std::cout << "creating arrays for start indices" << std::endl;
-        std::vector<std::vector<size_t>> startIndices(omp_get_max_threads());
-        for (size_t i = 0; i < omp_get_max_threads(); ++i) {
-            startIndices[i] = std::vector<size_t>();
-            if (globalSequences[i].size() == 0) {
-                continue;
-            }
-            startIndices.emplace_back(0);
-            std::uint64_t seq = globalSequences[i][0].seqID;
-            for (int j = 0; j < globalSequences[i].size(); ++j) {
-                if (seq != globalSequences[i][j].seqID) {
-                    seq = globalSequences[i][j].seqID;
-                    startIndices[i].emplace_back(j);
-                }
-            }
-        }
-        std::cout << "computing temporal buckets" << std::endl;
+    std::vector<temporalSequence> extractDynamicTemporalBuckets( std::vector<temporalSequence> &nonSparseSequences, size_t numOfPatients,
+                                                          int numOfThreads, double sparsity, bool removeSparseBuckets)  {
+        ips4o::parallel::sort(nonSparseSequences.begin(),nonSparseSequences.end(), timedSequencesSorter, numOfThreads);
+        std::vector<size_t> startPositions = getSequenceStartPositions(nonSparseSequences);
+        std::cout << "computing dynamic temporal buckets" << std::endl;
         size_t sparsityThreshold = sparsity * numOfPatients;
+#pragma omp parallel for shared(nonSparseSequences, removeSparseBuckets, sparsityThreshold,std::cout, startPositions) default (none)
+        for (size_t i = 0; i < startPositions.size(); ++i) {
+            size_t startPos = startPositions[i];
+            size_t endPos;
+            if (i < startPositions.size() - 1) {
+                endPos = startPositions[i + 1];
+            } else {
+                endPos = nonSparseSequences.size();
+            }
+            auto startIterator = nonSparseSequences.begin() + startPos;
+            auto endIterator = nonSparseSequences.begin() + endPos;
 
-#pragma omp parallel for shared(nonSparseSequences, removeSparseBuckets, sparsityThreshold, globalSequences, std::cout, startIndices) default (none)
-        for (size_t i = 0; i < omp_get_max_threads(); ++i) {
-            for (size_t j = 0; j < startIndices[i].size(); ++j) {
-                size_t local_start = startIndices[i][j];
-                size_t end;
-                if (j < startIndices[i].size() - 1) {
-                    end = startIndices[i][j + 1];
-                } else {
-                    end = globalSequences[i].size();
-                }
-                auto startIterator = globalSequences[i].begin() + local_start;
-                auto endIterator = globalSequences[i].begin() + end;
+            //       compute buckets
+            unsigned int min = UINT32_MAX, max = 0;
 
-//       compute buckets
-                unsigned int min = 0, max = 0;
-
-                for (auto it = startIterator; it != endIterator; ++it) {
-                    min = std::min(min, it->duration);
-                    max = std::max(max, it->duration);
-                }
-                unsigned int range = max - min;
-                int numberOfBuckets = std::max(4, int(std::log(range)));
+            for (auto it = startIterator; it != endIterator; ++it) {
+                min = std::min(min, it->duration);
+                max = std::max(max, it->duration);
+            }
+            unsigned int range = max - min;
+            int numberOfBuckets = std::max(4, int(std::log(range)));
 
 //      add bucket id to sequence id
-                for (auto it = startIterator; it != endIterator; ++it) {
-                    unsigned int bucket = getBucket(min, max, range / numberOfBuckets, it->duration);
-                    int bitShift = sizeof(std::int64_t) * 8 - 8;
-                    it->seqID = bucket << bitShift && it->seqID;
-                }
-
-                if (removeSparseBuckets) {
-                    std::set<unsigned int> sequenceInPatient;
-                    ips4o::parallel::sort(startIterator, endIterator, timedSequencesSorter);
-                    std::uint64_t lastSequence = startIterator->seqID;
-                    size_t count = 0;
-                    auto it = startIterator;
-                    while (it != endIterator) {
-                        if (it->seqID == lastSequence) {
-                            sequenceInPatient.insert(it->patientID);
-                            ++count;
-                            ++it;
-                        } else {
-                            lastSequence = it->seqID;
-                            if (sequenceInPatient.size() < sparsityThreshold) {
-                                it = globalSequences[i].erase(it - count, it);
-                            } else {
-                                ++it;
-                            }
-                            sequenceInPatient.clear();
-                            count = 0;
-                        }
-                    }
-                }
+            for (auto it = startIterator; it != endIterator; ++it) {
+                unsigned int bucket = getBucket(min, max, range / numberOfBuckets, it->duration);
+                int bitShift = sizeof(std::int64_t) * 8 - 8;
+                it->seqID = bucket << bitShift && it->seqID;
             }
         }
-
-        std::cout << "merging and sorting sequence vectors" << std::endl;
-        std::vector<temporalSequence> sortedSequences;
-        for (std::vector<temporalSequence> sequences: globalSequences) {
-            sortedSequences.insert(sortedSequences.end(), sequences.begin(), sequences.end());
-            sequences.clear();
-            sequences.shrink_to_fit();
+        if(removeSparseBuckets){
+            nonSparseSequences = removeSparseSequences(nonSparseSequences,numOfPatients, sparsity, numOfThreads);
         }
-        ips4o::parallel::sort(sortedSequences.begin(), sortedSequences.end(), timedSequencesSorter);
-
-        return sortedSequences;
-
-    }
-
-
-    size_t createSequencesFromFiles(std::vector<std::string> inputFilePaths, char inputFileDelimiter,
-                                    const std::string &outPutDirectory, const std::string &outputFilePrefix,
-                                    int patIDColumns[], int phenxColumns[], int dateColumns[], size_t numOfPatients,
-                                    int patIdLength, int numOfThreads, unsigned int phenxIdLength) {
-        std::vector<dbMartEntry> dbMart;
-        for (int i = 0; i < inputFilePaths.size(); ++i) {
-            FILE *csvFilePointer = fopen(inputFilePaths[i].c_str(), "r");
-            if (csvFilePointer == nullptr) {
-                return 0;
-            }
-            std::vector<dbMartEntry> localDBMart = extractDBMartFromCsv(csvFilePointer, patIDColumns[i],
-                                                                        phenxColumns[i], dateColumns[i],
-                                                                        inputFileDelimiter);
-            dbMart.insert(dbMart.end(), localDBMart.begin(), localDBMart.end());
-        }
-        std::vector<size_t> startPositions = extractStartPositions(dbMart);
-        return writeSequencesFromArrayToFile(dbMart, startPositions, outPutDirectory,
-                                         outputFilePrefix, patIdLength, numOfThreads, phenxIdLength);
+        return nonSparseSequences;
     }
 
     std::vector<size_t> extractStartPositions(std::vector<dbMartEntry> &dbMart) {
