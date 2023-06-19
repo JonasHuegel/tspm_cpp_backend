@@ -21,10 +21,9 @@ namespace tspm {
     const double DURATION_IN_YEARS = 365.25;
 
     std::vector<temporalSequence>
-    extractMonthlySequences(std::vector<temporalSequence> &sequences, bool durationSparsity,
+    applyDurationSparsity(std::vector<temporalSequence> &sequences, bool storeDurationInSequence,
                             double sparsity, size_t numOfPatients, int numOfThreads = 1,
-                            double durationPeriods = DURATION_IN_MONTHS,
-                            unsigned int daysForCoOccurrence = 14, unsigned int bitShift = 52);
+                            unsigned int bitShift = 52);
 
     unsigned int getDurationPeriod(unsigned int duration, double durationPeriods, unsigned int daysForCoOccurrence);
 

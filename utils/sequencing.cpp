@@ -203,9 +203,9 @@ namespace tspm {
             } else {
                 endPos = sequences.begin() + numOfSequencesPerChunk;
                 std::int64_t lastSeq = endPos->seqID;
-                std::int64_t lastDur = getDurationPeriod(endPos->duration, durationPeriods, daysForCoOccurrence);
+                std::int64_t lastDur = endPos->duration;
                 for (; endPos != sequences.end() && lastSeq == endPos->seqID &&
-                       getDurationPeriod(endPos->duration, durationPeriods, daysForCoOccurrence) == lastDur; ++endPos);
+                       endPos->duration == lastDur; ++endPos);
             }
             localSequences.emplace_back(std::vector<temporalSequence>(sequences.begin(), endPos));
             sequences.erase(sequences.begin(), endPos);
@@ -216,43 +216,50 @@ namespace tspm {
 
 
     std::vector<temporalSequence>
-    extractMonthlySequences(std::vector<temporalSequence> &sequences, bool durationSparsity,
+    applyDurationSparsity(std::vector<temporalSequence> &sequences, bool storeDurationInSequence,
                             double sparsity, size_t numOfPatients, int numOfThreads,
-                            double durationPeriods, unsigned int daysForCoOccurrence, unsigned int bitShift) {
-        std::vector<std::vector<temporalSequence>> localSequences = splitSequenceVectorInChunks(sequences, numOfThreads,
-                                                                                                durationPeriods,
-                                                                                                daysForCoOccurrence);
+                            unsigned int bitShift) {
+        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
         size_t sparsityThreshold = numOfPatients * sparsity;
-
-#pragma omp parallel for default (none) shared(numOfThreads, localSequences, bitShift, sparsityThreshold, durationSparsity, durationPeriods, daysForCoOccurrence)
-        for (size_t i = 0; i < numOfThreads; ++i) {
-            if (localSequences[i].empty())
-                continue;
-            auto sparsityIt = localSequences[i].begin();
+        std::vector<size_t> startPositions = getSequenceStartPositions(sequences);
+#pragma omp parallel for default (none) shared(startPositions, bitShift, sparsityThreshold, storeDurationInSequence, sequences)
+        for (size_t i = 0; i < startPositions.size(); ++i) {
+            size_t startPos = startPositions[i];
+            size_t endPos;
+            if (i < startPositions.size() - 1) {
+                endPos = startPositions[i + 1];
+            } else {
+                endPos = sequences.size();
+            }
+            auto sparsityIt = sequences.begin() + startPos;
             std::set<unsigned int> sequenceInPatient;
-            std::uint64_t lastSequence =
-                    getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOccurrence) << bitShift |
-                    sparsityIt->seqID;
-            sparsityIt->seqID =
-                    getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOccurrence) << bitShift |
-                    sparsityIt->seqID;
+            std::uint64_t lastSequence;
+            if(storeDurationInSequence) {
+                lastSequence =
+                        sparsityIt->duration << bitShift | sparsityIt->seqID;
+                sparsityIt->seqID =
+                        sparsityIt->duration << bitShift | sparsityIt->seqID;
+            }else {
+                lastSequence = sparsityIt->duration;
+            }
             ++sparsityIt;
             size_t count = 0;
             // since the sequences are order by ID as first and duration as second iterator, we can iterate over them and
             // integrate the duration in month and directly remove check for sparsity if the updated sequenceID change
-            while (sparsityIt != localSequences[i].end()) {
-                sparsityIt->seqID =
-                        getDurationPeriod(sparsityIt->duration, durationPeriods, daysForCoOccurrence) << bitShift |
-                        sparsityIt->seqID;
+            auto endIt = sequences.begin() + endPos;
+            while (sparsityIt != endIt) {
+                if(storeDurationInSequence) {
+                    sparsityIt->seqID = sparsityIt->duration << bitShift | sparsityIt->seqID;
+                }
                 if (sparsityIt->seqID == lastSequence) {
                     sequenceInPatient.insert(sparsityIt->patientID);
                     ++count;
                     ++sparsityIt;
                 } else {
                     lastSequence = sparsityIt->seqID;
-                    if (durationSparsity && sequenceInPatient.size() < sparsityThreshold) {
+                    if (sequenceInPatient.size() < sparsityThreshold) {
                         for (auto it = sparsityIt - (count + 1); it != sparsityIt; ++it) {
-                            //
+                            //use UINT32_MAX later after sorting to identify and remove sparse sequences!
                             it->patientID = UINT32_MAX;
                         }
                     }
@@ -262,16 +269,15 @@ namespace tspm {
                 }
             }
         }
-        std::vector<temporalSequence> mergedSequences;
-        for (std::vector<temporalSequence> seqs: localSequences) {
-            ips4o::parallel::sort(seqs.begin(), seqs.end(), timedSequenceByPatientIDSorter, numOfThreads);
-            size_t i;
-            for (i = 0; i < seqs.size() && seqs[i].patientID < UINT32_MAX; ++i);
-            mergedSequences.insert(mergedSequences.end(), seqs.begin(), seqs.begin() + i);
-            seqs.clear();
-            seqs.shrink_to_fit();
+
+        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequenceByPatientIDSorter, numOfThreads);
+        auto it = sequences.begin();
+        while(it!= sequences.end() && it->patientID < UINT32_MAX ){
+            ++it;
         }
-        return mergedSequences;
+        sequences.erase(it, sequences.end());
+        sequences.shrink_to_fit();
+        return sequences;
     }
 
 
@@ -279,9 +285,11 @@ namespace tspm {
 
     std::vector<temporalSequence> extractNonSparseSequences(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions, double sparsity,
                                                             unsigned int &numOfThreads, double durationPeriod, int daysForCoOccurrence, unsigned int phenxIdLength){
+
         std::vector<temporalSequence> sequences = extractSparseSequences(dbMart, startPositions, numOfThreads,
                                                                             durationPeriod, daysForCoOccurrence);
         std::cout << "Number of overall extracted Sequences: "<< sequences.size() << std::endl;
+        std::cout << "Removing sparse sequences:" << std::endl;
         sequences = removeSparseSequences (sequences, startPositions.size(), sparsity, numOfThreads);
         return sequences;
     }
@@ -368,7 +376,6 @@ namespace tspm {
                 }
             }
         }
-        std::cout << "merging sequencing vectors from all threads" << std::endl;
         std::vector<temporalSequence> allSequences;
         size_t sumOfSequences = 0;
         for (int i = 0; i < numOfThreads; ++i) {
