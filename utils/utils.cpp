@@ -257,7 +257,8 @@ namespace tspm {
                 endPos = sequences.size();
             }
             size_t numOfSequences = endPos-startPos;
-            localCounts[omp_get_thread_num()].emplace_back(sequences[i].seqID,numOfSequences);
+            std::int64_t seq = sequences[i].seqID;
+            localCounts[omp_get_thread_num()].emplace_back(seq,numOfSequences);
         }
 
         std::vector<std::pair<std::int64_t, size_t>> sequenceCounts;
@@ -291,7 +292,8 @@ namespace tspm {
                 endPos = sequences.size();
             }
             size_t numOfSequences = endPos-startPos;
-            localCounts[omp_get_thread_num()].emplace_back(sequences[i].seqID,numOfSequences);
+            std::int64_t seq = sequences[i].seqID;
+            localCounts[omp_get_thread_num()].emplace_back(seq,numOfSequences);
             if(localCounts[omp_get_thread_num()].size() > 1000 && map_mutex.try_lock()){
                 for(std::pair<std::int64_t, size_t> entry :localCounts[omp_get_thread_num()]) {
                     sequenceCounts.emplace(entry.first, entry.second);
