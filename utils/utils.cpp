@@ -260,8 +260,6 @@ namespace tspm {
             localCounts[omp_get_thread_num()].emplace_back(std::make_pair(sequences[i].seqID,numOfSequences));
         }
 
-        sequences.clear();
-        sequences.shrink_to_fit();
         std::vector<std::pair<std::int64_t, size_t>> sequenceCounts;
         for (size_t i =0 ;i < numOfThreads; ++i) {
             std::vector<std::pair<std::int64_t, size_t>> counts = localCounts[i];
@@ -301,8 +299,6 @@ namespace tspm {
                 localCounts[omp_get_thread_num()].clear();
             }
         }
-        sequences.clear();
-        sequences.shrink_to_fit();
         for (size_t i =0 ;i < numOfThreads; ++i) {
             std::vector<std::pair<std::int64_t, size_t>> counts = localCounts[i];
             if(counts.empty()){
