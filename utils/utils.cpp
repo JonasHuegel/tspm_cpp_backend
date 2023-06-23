@@ -304,7 +304,7 @@ namespace tspm {
             if(counts.empty()){
                 continue;
             }
-            for(std::pair<std::int64_t, size_t> entry :localCounts[omp_get_thread_num()]) {
+            for(std::pair<std::int64_t, size_t> entry : counts) {
                 sequenceCounts.emplace(entry.first, entry.second);
             }
             counts.clear();
