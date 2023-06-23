@@ -257,7 +257,7 @@ namespace tspm {
                 endPos = sequences.size();
             }
             size_t numOfSequences = endPos-startPos;
-            localCounts[omp_get_thread_num()].emplace_back(std::make_pair(sequences[i].seqID,numOfSequences));
+            localCounts[omp_get_thread_num()].emplace_back(sequences[i].seqID,numOfSequences);
         }
 
         std::vector<std::pair<std::int64_t, size_t>> sequenceCounts;
