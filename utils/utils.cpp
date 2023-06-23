@@ -291,7 +291,7 @@ namespace tspm {
                 endPos = sequences.size();
             }
             size_t numOfSequences = endPos-startPos;
-            localCounts[omp_get_thread_num()].emplace_back(std::make_pair(sequences[i].seqID,numOfSequences));
+            localCounts[omp_get_thread_num()].emplace_back(sequences[i].seqID,numOfSequences);
             if(localCounts[omp_get_thread_num()].size() > 1000 && map_mutex.try_lock()){
                 for(std::pair<std::int64_t, size_t> entry :localCounts[omp_get_thread_num()]) {
                     sequenceCounts.emplace(entry.first, entry.second);
