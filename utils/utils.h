@@ -19,17 +19,21 @@
 namespace tspm {
     size_t writeSequencesToFile(std::string patientFilename, std::vector<std::int64_t> &sequences);
 
-    std::vector<temporalSequence> readSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
-                                                          bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24,
-                                                          int numOfThreads = 1);
+    std::vector<temporalSequence>
+            readSequencesFromFiles(const std::string &outputDir, const std::string &file_prefix, int numberOfPatients,
+                                   bool storesDuration, unsigned int patIdLength, unsigned int bitShift = 24,
+                                   int numOfThreads = 1);
 
-    std::vector<temporalSequence> removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
+    std::vector<temporalSequence>
+            removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
                                unsigned int numOfThreads);
 
-    std::vector<std::pair<std::int64_t, size_t>> summarizeSequencesAsVector(std::vector<temporalSequence> &sequences,
-                               unsigned int &numOfThreads);
+    std::vector<std::pair<temporalSequence, size_t>>
+    summarizeSequencesAsVector(std::vector<temporalSequence> &sequences, bool includeDuration,
+                               std::vector<size_t> durationBuckets, unsigned int &numOfThreads);
 
-    std::map<std::int64_t, size_t> summarizeSequencesAsMap(std::vector<temporalSequence> &sequences, unsigned int &numOfThreads);
+    std::map<std::int64_t, size_t>
+            summarizeSequencesAsMap(std::vector<temporalSequence> &sequences, unsigned int &numOfThreads);
 
     std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
@@ -50,11 +54,13 @@ namespace tspm {
 
     std::int64_t getTimeFromString(const char *date_string);
 
-    std::vector<dbMartEntry> extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
-                                                  int dateColumn, char delim = ',');
+    std::vector<dbMartEntry>
+            extractDBMartFromCsv(FILE *csv_file, int patIdColumn, int phenotypeIDColumn,
+                                 int dateColumn, char delim = ',');
 
-    std::int64_t writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
-                                     temporalSequence *temporalSequences, bool debug = false);
+    std::int64_t
+    writeSequencesAsCsV(std::string fileName, std::string filepath, char delimiter, size_t numOfSequences,
+                        temporalSequence *temporalSequences, bool debug = false);
 
     std::filesystem::path createOutputFilePath(const std::string &outPutDirectory);
 
@@ -83,9 +89,8 @@ namespace tspm {
                                       unsigned int bitShift, unsigned int lengthOfPhenx,
                                       std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
 
-    std::vector<temporalSequence> extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences,
-                                                          unsigned int bitShift, unsigned int lengthOfPhenx,
-                                                          std::set<unsigned int> &allEndPhenx,
-                                                          int &numOfThreads);
+    std::vector<temporalSequence>
+            extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences, unsigned int bitShift,
+                                    unsigned int lengthOfPhenx, std::set<unsigned int> &allEndPhenx, int &numOfThreads);
 }//tspm
 #endif //TSPM_UTILS_H

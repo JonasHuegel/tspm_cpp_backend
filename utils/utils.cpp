@@ -239,15 +239,15 @@ namespace tspm {
         return allSequences;
     }
 
-    std::vector<std::pair<std::int64_t, size_t>>
-    summarizeSequencesAsVector(std::vector<temporalSequence> &sequences,
-                                 unsigned int &numOfThreads) {
-        std::vector<std::pair<std::int64_t, size_t>> localCounts[numOfThreads];
+    std::vector<std::pair<temporalSequence, size_t>>
+    summarizeSequencesAsVector(std::vector<temporalSequence> &sequences, bool includeDuration,
+                               std::vector<size_t> durationBuckets, unsigned int &numOfThreads) {
+        std::vector<std::pair<temporalSequence, size_t>> localCounts[numOfThreads];
         omp_set_num_threads(numOfThreads);
         ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
         std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
 
-#pragma omp parallel for default (none) shared(sequenceStartPos, sequences, localCounts)
+#pragma omp parallel for default (none) shared(sequenceStartPos, sequences, localCounts, includeDuration, durationBuckets)
         for (size_t i = 0; i < sequenceStartPos.size(); ++i) {
             size_t startPos = sequenceStartPos[i];
             size_t endPos;
@@ -256,14 +256,44 @@ namespace tspm {
             } else {
                 endPos = sequences.size();
             }
-            size_t numOfSequences = endPos-startPos;
-            std::int64_t seq = sequences[i].seqID;
-            localCounts[omp_get_thread_num()].emplace_back(seq,numOfSequences);
+
+            if (!includeDuration || durationBuckets.empty()) {
+                size_t numOfSequences = endPos - startPos;
+                temporalSequence seq = {};
+                seq.seqID = sequences[i].seqID;
+                seq.duration = 0;
+                seq.patientID = 0;
+                localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
+            } else {
+                size_t durStartPos = startPos;
+                size_t bucketIndex = 0;
+                for (size_t pos = startPos; pos < endPos; ++pos) {
+                    if (sequences[pos].duration > durationBuckets[bucketIndex] &&
+                        bucketIndex < durationBuckets.size()) {
+                        size_t numOfSequences = pos - durStartPos;
+                        temporalSequence seq = {};
+                        seq.seqID = sequences[i].seqID;
+                        seq.duration = durationBuckets[bucketIndex];
+                        seq.patientID = 0;
+                        localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
+                        durStartPos = pos;
+                        ++bucketIndex;
+                    }
+
+                    size_t numOfSequences = endPos - durStartPos;
+                    temporalSequence seq = {};
+                    seq.seqID = sequences[i].seqID;
+                    seq.duration = durationBuckets[bucketIndex];
+                    seq.patientID = 0;
+                    localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
+                }
+
+            }
         }
 
-        std::vector<std::pair<std::int64_t, size_t>> sequenceCounts;
+        std::vector<std::pair<temporalSequence, size_t>> sequenceCounts;
         for (size_t i =0 ;i < numOfThreads; ++i) {
-            std::vector<std::pair<std::int64_t, size_t>> counts = localCounts[i];
+            std::vector<std::pair<temporalSequence, size_t>> counts = localCounts[i];
             if(counts.empty()){
                 continue;
             }
