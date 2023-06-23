@@ -239,65 +239,79 @@ namespace tspm {
         return allSequences;
     }
 
-    std::map<std::int64_t, size_t>
-    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
-                                 unsigned int &numOfThreads, unsigned int phenxIdLength) {
-        std::map<std::int64_t, size_t> globalSequenceMap;
-        std::map<std::int64_t, size_t> localmaps[numOfThreads];
-        size_t numOfPatients = startPositions.size();
+    std::vector<std::pair<std::int64_t, size_t>>
+    summarizeSequencesAsVector(std::vector<temporalSequence> &sequences,
+                                 unsigned int &numOfThreads) {
+        std::vector<std::pair<std::int64_t, size_t>> localCounts[numOfThreads];
         omp_set_num_threads(numOfThreads);
-        int localPatCount = 0;
-        std::mutex map_mutex;
-#pragma omp parallel for default (none) shared(startPositions, dbMart, localmaps, globalSequenceMap, phenxIdLength, numOfPatients, map_mutex) private(localPatCount)
-        for (size_t i = 0; i < numOfPatients; ++i) {
-            size_t startPos = startPositions[i];
-            size_t endPos = i < numOfPatients - 1 ? startPositions[i + 1] : dbMart.size();
-            std::set<std::int64_t> patientSequenceSet;
-            for (size_t j = startPos; j < endPos - 1; ++j) {
-                for (size_t k = j + 1; k < endPos; ++k) {
-                    std::int64_t sequence = createSequence(dbMart[j].phenID, dbMart[k].phenID, phenxIdLength);
-                    if (patientSequenceSet.insert(sequence).second) {
-                        if (auto it = localmaps[omp_get_thread_num()].find(sequence); it ==
-                                                                                      localmaps[omp_get_thread_num()].end()) {
-                            localmaps[omp_get_thread_num()].insert(std::make_pair(sequence, 1));
-                        } else {
-                            it->second += 1;
-                        }
-                    }
-                }
+        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
+        std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
+
+#pragma omp parallel for default (none) shared(sequenceStartPos, sequences, localCounts)
+        for (size_t i = 0; i < sequenceStartPos.size(); ++i) {
+            size_t startPos = sequenceStartPos[i];
+            size_t endPos;
+            if (i < sequenceStartPos.size() - 1) {
+                endPos = sequenceStartPos[i + 1];
+            } else {
+                endPos = sequences.size();
             }
-            omp_set_schedule(omp_sched_dynamic,1);
-            if(map_mutex.try_lock()){
-//                map_mutex.lock();
-                for (auto mapEntry: localmaps[omp_get_thread_num()]) {
-                    if (auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()) {
-                        globalSequenceMap.insert(std::make_pair(mapEntry.first, mapEntry.second));
-                    } else {
-                        it->second += mapEntry.second;
-                    }
+            size_t numOfSequences = endPos-startPos;
+            localCounts[omp_get_thread_num()].emplace_back(std::make_pair(sequences[i].seqID,numOfSequences));
+        }
+
+        std::vector<std::pair<std::int64_t, size_t>> sequenceCounts;
+        for (size_t i =0 ;i < numOfThreads; ++i) {
+            std::vector<std::pair<std::int64_t, size_t>> counts = localCounts[i];
+            if(counts.empty()){
+                continue;
+            }
+            sequenceCounts.insert(sequenceCounts.end(),counts.begin(), counts.end());
+            counts.clear();
+            counts.shrink_to_fit();
+        }
+        return sequenceCounts;
+    }
+
+    std::map<std::int64_t, size_t> summarizeSequencesAsMap(std::vector<temporalSequence> &sequences, unsigned int &numOfThreads){
+        std::vector<std::pair<std::int64_t, size_t>> localCounts[numOfThreads];
+        std::map<std::int64_t, size_t> sequenceCounts;
+        omp_set_num_threads(numOfThreads);
+        std::mutex map_mutex;
+        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
+        std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
+
+#pragma omp parallel for default (none) shared(sequenceStartPos, sequences, localCounts, map_mutex, sequenceCounts)
+        for (size_t i = 0; i < sequenceStartPos.size(); ++i) {
+            size_t startPos = sequenceStartPos[i];
+            size_t endPos;
+            if (i < sequenceStartPos.size() - 1) {
+                endPos = sequenceStartPos[i + 1];
+            } else {
+                endPos = sequences.size();
+            }
+            size_t numOfSequences = endPos-startPos;
+            localCounts[omp_get_thread_num()].emplace_back(std::make_pair(sequences[i].seqID,numOfSequences));
+            if(localCounts[omp_get_thread_num()].size() > 1000 && map_mutex.try_lock()){
+                for(std::pair<std::int64_t, size_t> entry :localCounts[omp_get_thread_num()]) {
+                    sequenceCounts.emplace(entry.first, entry.second);
                 }
-                map_mutex.unlock();
-                localmaps[omp_get_thread_num()].clear();
-                localPatCount = 0;
-            }else{
-                ++localPatCount;
+                localCounts[omp_get_thread_num()].clear();
             }
         }
 
-        for (int i = 0; i < numOfThreads; ++i) {
-            if (localmaps[i].empty()) {
+        for (size_t i =0 ;i < numOfThreads; ++i) {
+            std::vector<std::pair<std::int64_t, size_t>> counts = localCounts[i];
+            if(counts.empty()){
                 continue;
             }
-            for (auto mapEntry: localmaps[i]) {
-                if (auto it = globalSequenceMap.find(mapEntry.first); it == globalSequenceMap.end()) {
-                    globalSequenceMap.insert(std::make_pair(mapEntry.first, mapEntry.second));
-                } else {
-                    it->second += mapEntry.second;
-                }
+            for(std::pair<std::int64_t, size_t> entry :localCounts[omp_get_thread_num()]) {
+                sequenceCounts.emplace(entry.first, entry.second);
             }
-            localmaps[i].clear();
+            counts.clear();
+            counts.shrink_to_fit();
         }
-        return globalSequenceMap;
+        return sequenceCounts;
     }
 
 

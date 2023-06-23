@@ -26,9 +26,10 @@ namespace tspm {
     std::vector<temporalSequence> removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
                                unsigned int numOfThreads);
 
-    std::map<std::int64_t, size_t>
-    summarizeSequencesFromDbMart(std::vector<dbMartEntry> &dbMart, std::vector<size_t> &startPositions,
-                                 unsigned int &numOfThreads, unsigned int phenxIdLength = 7);
+    std::vector<std::pair<std::int64_t, size_t>> summarizeSequencesAsVector(std::vector<temporalSequence> &sequences,
+                               unsigned int &numOfThreads);
+
+    std::map<std::int64_t, size_t> summarizeSequencesAsMap(std::vector<temporalSequence> &sequences, unsigned int &numOfThreads);
 
     std::vector<std::string> getTokensFromLine(const std::string &line, char delim);
 
