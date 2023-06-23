@@ -167,8 +167,15 @@ namespace tspm {
             } else {
                 endPos = sequences.size();
             }
-            size_t numOfSequences = endPos - startPos;
-            if(numOfSequences < sparsityThreshold){
+            unsigned int lastPatient= UINT32_MAX;
+            size_t patientCount = 0;
+            for(size_t j = startPos; j < endPos; ++j){
+                if(sequences[j].patientID != lastPatient){
+                    lastPatient = sequences[j].patientID;
+                    patientCount++;
+                }
+            }
+            if(patientCount < sparsityThreshold){
                 for (size_t j = startPos; j < endPos; ++j) {
                     sequences[j].patientID = UINT32_MAX;
                 }
