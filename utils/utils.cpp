@@ -278,7 +278,7 @@ namespace tspm {
                         durStartPos = pos;
 
                         //match duration to next bucket
-                        for (bucketIndex + 1; bucketIndex < durationBuckets.size() &&
+                        for (++bucketIndex; bucketIndex < durationBuckets.size() &&
                                               sequences[pos].duration < durationBuckets[bucketIndex]; ++bucketIndex);
                         if (bucketIndex == durationBuckets.size()) {
                             bucketThreshold = UINT64_MAX;
