@@ -276,11 +276,12 @@ namespace tspm {
                 for (size_t pos = startPos; pos < endPos; ++pos) {
                     if (sequences[pos].duration >= bucketThreshold) {
                         size_t numOfSequences = pos - durStartPos;
-                        temporalSequence seq = {};
+                        temporalSequence seq{};
                         seq.seqID = sequences[pos].seqID;
                         seq.duration = bucketIndex;
                         seq.patientID = 0;
-                        localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
+                        std::pair pair = std::make_pair(seq, numOfSequences);
+                        localCounts[omp_get_thread_num()].emplace_back(pair);
                         durStartPos = pos;
 
                         bucketIndex = getCandidateBucket(sequences[pos].duration,durationBuckets);
