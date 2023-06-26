@@ -30,7 +30,7 @@ namespace tspm {
 
     std::vector<std::pair<temporalSequence, size_t>>
     summarizeSequencesAsVector(std::vector<temporalSequence> &sequences, bool includeDuration,
-                               std::vector<size_t> durationBuckets, unsigned int &numOfThreads);
+                               std::vector<unsigned int> durationBuckets, unsigned int &numOfThreads);
 
     std::map<std::int64_t, size_t>
             summarizeSequencesAsMap(std::vector<temporalSequence> &sequences, unsigned int &numOfThreads);

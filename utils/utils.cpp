@@ -241,7 +241,7 @@ namespace tspm {
 
     std::vector<std::pair<temporalSequence, size_t>>
     summarizeSequencesAsVector(std::vector<temporalSequence> &sequences, bool includeDuration,
-                               std::vector<size_t> durationBuckets, unsigned int &numOfThreads) {
+                               std::vector<unsigned int> durationBuckets, unsigned int &numOfThreads) {
         std::vector<std::pair<temporalSequence, size_t>> localCounts[numOfThreads];
         omp_set_num_threads(numOfThreads);
         ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
@@ -266,8 +266,14 @@ namespace tspm {
                 localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
             } else {
                 size_t durStartPos = startPos;
-                size_t bucketIndex = 0;
-                for (size_t pos = startPos, bucketThreshold = durationBuckets[1]; pos < endPos; ++pos) {
+                size_t bucketIndex = getCandidateBucket(sequences[startPos].duration,durationBuckets);
+                size_t bucketThreshold;
+                if (bucketIndex >= durationBuckets.size()-1) {
+                    bucketThreshold = UINT64_MAX;
+                } else {
+                    bucketThreshold = durationBuckets[bucketIndex+1];
+                }
+                for (size_t pos = startPos; pos < endPos; ++pos) {
                     if (sequences[pos].duration >= bucketThreshold) {
                         size_t numOfSequences = pos - durStartPos;
                         temporalSequence seq = {};
@@ -277,15 +283,12 @@ namespace tspm {
                         localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
                         durStartPos = pos;
 
-                        //match duration to next bucket
-                        for (++bucketIndex; bucketIndex < durationBuckets.size() &&
-                                              sequences[pos].duration < durationBuckets[bucketIndex]; ++bucketIndex);
-                        if (bucketIndex == durationBuckets.size()) {
+                        bucketIndex = getCandidateBucket(sequences[pos].duration,durationBuckets);
+                        if (bucketIndex >= durationBuckets.size()-1) {
                             bucketThreshold = UINT64_MAX;
                         } else {
-                            bucketThreshold = durationBuckets[bucketIndex];
+                            bucketThreshold = durationBuckets[bucketIndex+1];
                         }
-                        --bucketIndex;
                     }
                 }
                 size_t numOfSequences = endPos - durStartPos;
