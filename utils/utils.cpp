@@ -294,14 +294,14 @@ namespace tspm {
                 }
                 size_t numOfSequences = endPos - durStartPos;
                 temporalSequence seq = {};
-                seq.seqID = sequences[i].seqID;
+                seq.seqID = sequences[durStartPos].seqID;
                 seq.duration = bucketIndex;
                 seq.patientID = 0;
                 localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
             }
         }
         std::vector<std::pair<temporalSequence, size_t>> sequenceCounts;
-        for (size_t i =0 ;i < numOfThreads; ++i) {
+        for (size_t i = 0 ;i < numOfThreads; ++i) {
             std::vector<std::pair<temporalSequence, size_t>> counts = localCounts[i];
             if(counts.empty()){
                 continue;

@@ -16,9 +16,11 @@ int main(int argc, char *argv[]) {
     bool createTemporalBuckets = false;
     double durationPeriods = tspm::DURATION_IN_MONTHS;
     unsigned int coOccurrence = 14;
-    bool durationSparsity = true;
+    bool durationSparsity = false;
     double durationSparsityValue = 0.05;
-    bool storeSeqDuringCreation = true;
+    bool storeSeqDuringCreation = false;
+    unsigned int numOfThreads = 16;
+    std::vector<unsigned int> thresholds = {0,1,3};
 
     std::vector<std::string> inputFilePaths;
     inputFilePaths.push_back(fileName);
@@ -32,6 +34,8 @@ int main(int argc, char *argv[]) {
                                   sparsity,createTemporalBuckets, durationPeriods, coOccurrence,
                                   durationSparsity, durationSparsityValue, removeSparseBuckets,7,16);
     std::cout<< "Number of sequences: " << seq.size() << std::endl;
+
+    auto sum = tspm::summarizeSequencesAsVector(seq,true,thresholds,numOfThreads);
 
     std::vector<tspm::dbMartEntry> dbMart;
     for (int i = 0; i < 20; ++i) {
