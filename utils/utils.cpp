@@ -277,7 +277,7 @@ namespace tspm {
                     if (sequences[pos].duration >= bucketThreshold) {
                         size_t numOfSequences = pos - durStartPos;
                         temporalSequence seq = {};
-                        seq.seqID = sequences[i].seqID;
+                        seq.seqID = sequences[pos].seqID;
                         seq.duration = bucketIndex;
                         seq.patientID = 0;
                         localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
