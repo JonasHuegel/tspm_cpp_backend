@@ -22,8 +22,6 @@ namespace tspm {
             dbMartEntries.emplace_back(entry);
         }
         return dbMartEntries;
-
-
     }
 
 
@@ -241,10 +239,14 @@ namespace tspm {
 
     std::vector<std::pair<temporalSequence, size_t>>
     summarizeSequencesAsVector(std::vector<temporalSequence> &sequences, bool includeDuration,
-                               std::vector<unsigned int> durationBuckets, unsigned int &numOfThreads) {
+                               std::vector<unsigned int> durationBuckets, bool patientLevel, unsigned int numOfThreads) {
         std::vector<std::pair<temporalSequence, size_t>> localCounts[numOfThreads];
         omp_set_num_threads(numOfThreads);
-        ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
+        if(patientLevel){
+            ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequenceByPatientIDSorter ,numOfThreads);
+        }else {
+            ips4o::parallel::sort(sequences.begin(), sequences.end(), timedSequencesSorter, numOfThreads);
+        }
         std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
 
 #pragma omp parallel for default (none) shared(sequenceStartPos, sequences, localCounts, includeDuration, durationBuckets)
@@ -260,9 +262,9 @@ namespace tspm {
             if (!includeDuration || durationBuckets.empty()) {
                 size_t numOfSequences = endPos - startPos;
                 temporalSequence seq = {};
-                seq.seqID = sequences[i].seqID;
+                seq.seqID = sequences[startPos].seqID;
                 seq.duration = 0;
-                seq.patientID = 0;
+                seq.patientID = sequences[startPos].patientID;
                 localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
             } else {
                 size_t durStartPos = startPos;
@@ -279,7 +281,7 @@ namespace tspm {
                         temporalSequence seq{};
                         seq.seqID = sequences[pos].seqID;
                         seq.duration = bucketIndex;
-                        seq.patientID = 0;
+                        seq.patientID = sequences[pos].patientID;
                         std::pair pair = std::make_pair(seq, numOfSequences);
                         localCounts[omp_get_thread_num()].emplace_back(pair);
                         durStartPos = pos;
@@ -296,7 +298,7 @@ namespace tspm {
                 temporalSequence seq = {};
                 seq.seqID = sequences[durStartPos].seqID;
                 seq.duration = bucketIndex;
-                seq.patientID = 0;
+                seq.patientID =  sequences[endPos].patientID;
                 localCounts[omp_get_thread_num()].emplace_back(seq, numOfSequences);
             }
         }
