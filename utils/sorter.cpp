@@ -26,15 +26,6 @@
 **********************************************************************************/
 #include "sorter.h"
 namespace tspm {
-/**
- * Comparator for temporalSequence struct. Added all greater as and smaller as cases for all attributes. In the equal
- * cases the next attribute should be used. In the case that all attributes are equal return false. The sequenceID is the
- * most important parameter, when to calculate the min/max values and the buckets for a unique sequence ID. The other
- * attributes are added for completeness.
- * @param first
- * @param second
- * @return
- */
     bool timedSequencesSorter(temporalSequence const &first, temporalSequence const &second) {
         if (first.seqID < second.seqID)
             return true;

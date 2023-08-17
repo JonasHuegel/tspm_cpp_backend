@@ -30,6 +30,10 @@
 #include "sorter.h"
 #include <ctime>
 namespace tspm {
+
+    /**
+     * Main workflow function which orchestarte the sequencing from dbMart that is already stored as a vector of dbMartEntries. 
+    */
     std::vector<temporalSequence>
     sequenceWorkflow(std::vector<dbMartEntry> &dbMart, bool storeSeqDuringCreation, const std::string &outPutDirectory,
                      const std::string &outputFilePrefix, bool removeSparseSequences,
@@ -38,7 +42,9 @@ namespace tspm {
                      double durationSparsityValue, bool removeSparseTemporalBuckets,
                      unsigned int patIdLength, unsigned int numOfThreads, unsigned int phenxIdLength = 7);
 
-
+    /**
+     * Main workflow function which orchestarte the sequencing from dbMart that is stored as one or multiple csv files.
+    */
     std::vector<temporalSequence>
     sequenceWorkflowFromCsVFiles(const std::vector<std::string> &inputFilePaths, char inputFileDelimiter,
                                  int patIDColumns[], int phenxColumns[], int dateColumns[], bool storeSeqDuringCreation,

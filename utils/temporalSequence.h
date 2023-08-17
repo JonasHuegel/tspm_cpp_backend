@@ -30,6 +30,9 @@
 
 #include <cstdint>
 namespace tspm {
+    /**
+     * struct to store the numeric representation of a sequence
+    */
     struct temporalSequence {
         std::int64_t seqID;
         unsigned int duration;

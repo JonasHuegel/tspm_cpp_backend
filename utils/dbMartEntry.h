@@ -29,6 +29,9 @@
 
 #include <cstdint>
 namespace tspm {
+    /*
+    * each instance of this struct represents one line of the numeric dbMArt used as input. 
+    */
     struct dbMartEntry {
         int patID;
         int phenID;

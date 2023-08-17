@@ -30,10 +30,25 @@
 #ifndef TSPM_CPP_BACKEND_SORTER_H
 #define TSPM_CPP_BACKEND_SORTER_H
 namespace tspm {
+    /**
+     * Comparator for temporalSequence struct. Added all greater as and smaller as cases for all attributes. In the equal
+     * cases the next attribute should be used. In the case that all attributes are equal return false. The sequenceID is the
+     * most important parameter, when to calculate the min/max values and the buckets for a unique sequence ID. The other
+     * attributes are added for completeness.
+     * @param first
+     * @param second
+     * @return
+     */
     bool timedSequencesSorter(temporalSequence const &first, temporalSequence const &second);
 
+    /**
+     * Comperator function for temporal sequence structs. It sorts the sequences  by the patient id as the main attribute
+    */
     bool timedSequenceByPatientIDSorter(temporalSequence const &first, temporalSequence const &second);
 
+    /**
+     * Comperator function to compare the dbMart structs. Sorts by patientID, start_date and phenx.
+    */
     bool dbMartSorter(const dbMartEntry &first, const dbMartEntry &second);
 }//tspm
 #endif //TSPM_CPP_BACKEND_SORTER_H
