@@ -491,6 +491,10 @@ namespace tspm {
         return std::find(phenxsOfInterest.begin(), phenxsOfInterest.end(), phenx) != phenxsOfInterest.end();
     }
 
+    bool isPhenxOfInterest(unsigned int phenx, std::set<unsigned int> phenxsOfInterest) {
+      return std::find(phenxsOfInterest.begin(), phenxsOfInterest.end(), phenx) != phenxsOfInterest.end();
+    }
+
     unsigned int getStartPhenx(temporalSequence &sequence, unsigned int lengthOfPhenx) {
         //remove possible values stored sequenceID
         std::string sequenceString = std::to_string(sequence.seqID);
@@ -518,7 +522,7 @@ namespace tspm {
     std::vector<temporalSequence>
     extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                       unsigned int bitShift, unsigned int lengthOfPhenx,
-                                      std::vector<unsigned int> &phenxOfInterest, int &numOfThreads) {
+                                      std::set<unsigned int> &phenxOfInterest, int &numOfThreads) {
         std::vector<temporalSequence> candidateSequences[numOfThreads];
 
         ips4o::parallel::sort(originalSequences.begin(), originalSequences.end(),
@@ -588,6 +592,49 @@ namespace tspm {
             sequences.shrink_to_fit();
         }
         return allCandidateSequences;
+    }
+
+    std::vector<temporalSequence>
+    extractSequencesWithPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
+                                      unsigned int bitShift, unsigned int lengthOfPhenx,
+                                      std::set<unsigned int> &phenxOfInterest, int &numOfThreads) {
+      std::vector<temporalSequence> candidateSequences[numOfThreads];
+      
+      ips4o::parallel::sort(originalSequences.begin(), originalSequences.end(),
+                            timedSequencesSorter, numOfThreads);
+      std::vector<size_t> startPositions = getSequenceStartPositions(originalSequences);
+      omp_set_num_threads(numOfThreads);
+    #pragma omp parallel for default (none) shared(startPositions, originalSequences, candidateSequences, minDuration, lengthOfPhenx, phenxOfInterest )
+      for (size_t i = 0; i < startPositions.size(); ++i) {
+        size_t startPos = startPositions[i];
+        size_t endPos;
+        if (i < startPositions.size() - 1) {
+          endPos = startPositions[i + 1];
+        } else {
+          endPos = originalSequences.size();
+        }
+        
+        if (isPhenxOfInterest(getStartPhenx(originalSequences[startPos], lengthOfPhenx), phenxOfInterest) || isPhenxOfInterest(getEndPhenx(originalSequences[startPos], lengthOfPhenx), phenxOfInterest)) {
+          unsigned int minimalDuration = 0;
+          for (size_t j = startPos; j < endPos; ++j) {
+            temporalSequence seq = originalSequences[j];
+            minimalDuration = std::max(minimalDuration, seq.duration);
+          }
+          if (minimalDuration >= minDuration) {
+            candidateSequences[omp_get_thread_num()].insert(candidateSequences[omp_get_thread_num()].end(),
+                                                  originalSequences.begin() + startPos,
+                                                  originalSequences.begin() + endPos);
+          }
+        }
+      }
+      
+      std::vector<temporalSequence> mergedSequenceArrays;
+      for (int i = 0; i < numOfThreads; ++i) {
+        mergedSequenceArrays.insert(mergedSequenceArrays.end(), candidateSequences[i].begin(),
+                                    candidateSequences[i].end());
+        candidateSequences[i].clear();
+      }
+      return mergedSequenceArrays;
     }
 
     unsigned int getCandidateBucket(unsigned int duration, std::vector<unsigned int> lowerBucketLimits) {

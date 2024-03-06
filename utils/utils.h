@@ -151,6 +151,12 @@ namespace tspm {
       * Function to check if a phenx is part of given list of phenx.
      */
     bool isPhenxOfInterest(unsigned int phenx, std::vector<unsigned int> phenxsOfInterest);
+    
+    /**
+     * Function to check if a phenx is part of given set of phenx.
+     */
+    bool isPhenxOfInterest(unsigned int phenx, std::set<unsigned int> phenxsOfInterest);
+    
      /**
       * Function to extract the end from the sequence struct.
      */
@@ -183,12 +189,19 @@ namespace tspm {
     std::vector<temporalSequence>
     extractSequencesWithSpecificStart(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
                                       unsigned int bitShift, unsigned int lengthOfPhenx,
-                                      std::vector<unsigned int> &phenxOfInterest, int &numOfThreads);
+                                      std::set<unsigned int> &phenxOfInterest, int &numOfThreads);
      /**
       * Function to extract all sequences that end with one phenx of given list of phenx.
      */
     std::vector<temporalSequence>
             extractSequencesWithEnd(std::vector<temporalSequence> &originalSequences, unsigned int bitShift,
                                     unsigned int lengthOfPhenx, std::set<unsigned int> &allEndPhenx, int &numOfThreads);
+    /**
+     * Function to extract all sequences that start or end with one phenx of given list of phenx. 
+     */
+    std::vector<temporalSequence>
+      extractSequencesWithPhenx(std::vector<temporalSequence> &originalSequences, std::uint64_t minDuration,
+                                        unsigned int bitShift, unsigned int lengthOfPhenx,
+                                        std::set<unsigned int> &phenxOfInterest, int &numOfThreads);    
 }//tspm
 #endif //TSPM_UTILS_H
