@@ -178,7 +178,7 @@ namespace tspm {
     std::vector<temporalSequence> removeSparseSequences(std::vector<temporalSequence> &sequences, size_t numOfPatients, double sparsity,
                                unsigned int numOfThreads) {
         ips4o::parallel::sort(sequences.begin(), sequences.end() ,
-                              timedSequenceByPatientIDSorter, numOfThreads);
+                              timedSequencesBySeqAndIDSorter, numOfThreads);
         std::vector<size_t> sequenceStartPos = getSequenceStartPositions(sequences);
 
         omp_set_num_threads(numOfThreads);

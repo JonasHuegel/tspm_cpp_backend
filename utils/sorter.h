@@ -48,7 +48,7 @@ namespace tspm {
      * @param second
      * @return
      */
-    bool timedSequenceByPatientIDSorter(temporalSequence const &first, temporalSequence const &second);
+    bool timedSequencesBySeqAndIDSorter(temporalSequence const &first, temporalSequence const &second);
     
     /**
      * Comperator function for temporal sequence structs. It sorts the sequences  by the patient id as the main attribute
