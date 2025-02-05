@@ -44,6 +44,25 @@ namespace tspm {
 
     }
 
+    bool timedSequencesBySeqAndIDSorter(temporalSequence const &first, temporalSequence const &second) {
+      if (first.seqID < second.seqID)
+        return true;
+      if (first.seqID > second.seqID)
+        return false;
+      if (first.patientID < second.patientID)
+        return true;
+      if (first.patientID > second.patientID)
+        return false;
+      if (first.duration < second.duration)
+        return true;
+      if (first.duration > second.duration)
+        return false;
+      
+      return false;
+      
+    }
+
+
     bool timedSequenceByPatientIDSorter(temporalSequence const &first, temporalSequence const &second) {
         if (first.patientID < second.patientID)
             return true;

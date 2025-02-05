@@ -40,7 +40,16 @@ namespace tspm {
      * @return
      */
     bool timedSequencesSorter(temporalSequence const &first, temporalSequence const &second);
-
+    
+    /**
+     * Comparator for temporalSequence struct. Using the sequence ID as first, and the patient id as second attribute. The sequence duration is the third parameter. Added all greater as and smaller as cases for all attributes. In the equal
+     * cases the next attribute should be used. In the case that all attributes are equal return false.
+     * @param first
+     * @param second
+     * @return
+     */
+    bool timedSequenceByPatientIDSorter(temporalSequence const &first, temporalSequence const &second);
+    
     /**
      * Comperator function for temporal sequence structs. It sorts the sequences  by the patient id as the main attribute
     */
